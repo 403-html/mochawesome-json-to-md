@@ -22,5 +22,9 @@
   "bugs": {
     "url": "https://github.com/htd-tstepien/mochawesome-json-to-md/issues"
   },
-  "homepage": "https://github.com/htd-tstepien/mochawesome-json-to-md#readme"
+  "homepage": "https://github.com/htd-tstepien/mochawesome-json-to-md#readme",
+  "dependencies": {
+    "lodash": "^4.17.21",
+    "yargs": "^17.0.1"
+  }
 }
