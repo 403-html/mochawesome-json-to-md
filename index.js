@@ -79,7 +79,7 @@ console.log(
 );
 
 const getJsonFileObj = (path) => {
-  if (!path) {
+  if (typeof path !== "string") {
     throw new Error(
       `Provide string path for JSON file, actually you pass: ${typeof path}`
     );
