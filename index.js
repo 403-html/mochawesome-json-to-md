@@ -1,6 +1,7 @@
 const fs = require("fs");
 const yargs = require("yargs/yargs");
 const { hideBin } = require("yargs/helpers");
+const _ = require("lodash");
 
 /* Arguments we can pass
  * argument (alias), type, default, description, example
@@ -32,18 +33,96 @@ const argv = yargs(hideBin(process.argv))
   })
   .help().argv;
 
-const mocha_convert = () => {
-  const { path, output, noEmoji } = argv;
+const mdTemplate = ({
+  startDate,
+  duration,
+  totalTests,
+  passedTests,
+  failedTests,
+  skippedTests,
+  skippedCypress,
+  otherTests,
+  emojis = true,
+}) => {
+  return `# Test report \n
+  > Run start date: ${startDate || 0} \n
+  > Duration: ${duration / 60 || 0}s \n
+\n
+## Tests run stats \n
+  ${emojis ? "📚 " : ""}total tests: ${totalTests || 0} \n
+  ${emojis ? "✔️  " : ""}passed: ${passedTests || 0} \n
+  ${emojis ? "❌ " : ""}failed: ${failedTests.length || 0} \n
+  ${emojis ? "🔜 " : ""}skipped: ${skippedTests || 0} \n
+  ${emojis ? "⚠️  " : ""}skipped by Cypress: ${skippedCypress || 0} \n
+  ${emojis ? "❇️  " : ""}other: ${otherTests || 0} \n
+\n
+## Failed tests \n
+  ${_.forEach(
+    failedTests,
+    (elem) => `${emojis ? "💢" : ""} ${elem.path}, tests: ${elem.tests} \n`
+  )}`;
+};
+
+console.log(
+  mdTemplate({
+    startDate: "12.03.2021",
+    duration: 231,
+    totalTests: 12,
+    passedTests: 7,
+    failedTests: [
+      { path: "./integration/test1.spec.js", tests: ["one", "two"] },
+      { path: "./integration/test2.spec.js", tests: ["one", "two"] },
+    ],
+    skippedCypress: 2,
+    emojis: false,
+  })
+);
+
+const getJsonFileObj = (path) => {
+  if (!path) {
+    throw new Error(
+      `Provide string path for JSON file, actually you pass: ${typeof path}`
+    );
+  }
 
   let jsonObj;
   try {
     jsonObj = JSON.parse(fs.readFileSync(path));
   } catch (err) {
-    console.log(`Error while reading file ${err}`);
+    throw new Error(`Error while parsing JSON file: ${err}`);
   }
-
-  console.log(jsonObj.results[3].suites);
+  return jsonObj;
 };
 
-mocha_convert();
+const mocha_convert = () => {
+  const { path, output, noEmoji } = argv;
+
+  const { stats, results } = getJsonFileObj(path);
+
+  console.log("suites " + stats.suites);
+  console.log("tests " + stats.tests);
+};
+
+// mocha_convert();
 // module.export = mocha_convert;
+
+// Sample md template
+/*
+# Test Report
+> Run start date: ${stats.start}
+> Duration:  ${duration}
+
+## Tests run stats
+emoji total tests: 
+emoji passed: 
+emoji failed:
+emoji skipped: 
+emoji skipped by Cypress:
+emoji other:
+
+## Failed tests
+emoji [path], [test]
+emoji [path], [test]
+emoji [path], [test]
+
+*/
