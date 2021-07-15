@@ -38,45 +38,81 @@ const mdTemplate = ({
   duration,
   totalTests,
   passedTests,
-  failedTests,
-  skippedTests,
-  skippedCypress,
-  otherTests,
+  failedTests = [],
+  skippedTests = [],
+  skippedCypress = [],
+  otherTests = [],
   emojis = true,
 }) => {
+// -- Sample --
+//   mdTemplate({
+//     startDate: "12.03.2021",
+//     duration: 231,
+//     totalTests: 12,
+//     passedTests: [],
+//     failedTests: [
+//       { path: "./integration/test1.spec.js", tests: ["one", "two"] },
+//       { path: "./integration/test2.spec.js", tests: ["one", "two"] },
+//     ],
+//     skippedCypress: [
+//       { path: "./integration/test1.spec.js", tests: ["one", "two"] },
+//     ],
+//     skippedTests: [],
+//     otherTests: [],
+//     emojis: true,
+//   })
+  const genList = (emoji, list) =>
+    _.map(
+      list,
+      ({ path, tests }) =>
+        `${emojis ? `${emoji}` : ""} Path: ${path}, tests: ${tests}`
+    );
+
   return `# Test report \n
-  > Run start date: ${startDate || 0} \n
-  > Duration: ${duration / 60 || 0}s \n
+  > Run start date: ${startDate} \n
+  > Duration: ${duration / 60}s \n
 \n
 ## Tests run stats \n
   ${emojis ? "📚 " : ""}total tests: ${totalTests || 0} \n
   ${emojis ? "✔️  " : ""}passed: ${passedTests || 0} \n
   ${emojis ? "❌ " : ""}failed: ${failedTests.length || 0} \n
-  ${emojis ? "🔜 " : ""}skipped: ${skippedTests || 0} \n
-  ${emojis ? "⚠️  " : ""}skipped by Cypress: ${skippedCypress || 0} \n
-  ${emojis ? "❇️  " : ""}other: ${otherTests || 0} \n
+  ${emojis ? "🔜 " : ""}skipped: ${skippedTests.length || 0} \n
+  ${emojis ? "⚠️  " : ""}skipped by Cypress: ${skippedCypress.length || 0} \n
+  ${emojis ? "❇️  " : ""}other: ${otherTests.length || 0} \n
 \n
 ## Failed tests \n
-  ${_.forEach(
-    failedTests,
-    (elem) => `${emojis ? "💢" : ""} ${elem.path}, tests: ${elem.tests} \n`
-  )}`;
+<details>
+<summary>Click to reveal</summary>
+<article>
+${_.join(genList("💢", failedTests), "\n")}
+</article>
+</details>
+\n
+## Skipped tests \n
+<details>
+<summary>Click to reveal</summary>
+<article>
+${_.join(genList("🔜", skippedTests), "\n")}
+</article>
+</details>
+\n
+## Skipped tests by Cypress
+<details>
+<summary>Click to reveal</summary>
+<article>
+${_.join(genList("⚠️", skippedCypress), "\n")}
+</article>
+</details>
+\n
+## Other tests
+<details>
+<summary>Click to reveal</summary>
+<article>
+${_.join(genList("❇️", otherTests), "\n")}
+</article>
+</details>
+`;
 };
-
-console.log(
-  mdTemplate({
-    startDate: "12.03.2021",
-    duration: 231,
-    totalTests: 12,
-    passedTests: 7,
-    failedTests: [
-      { path: "./integration/test1.spec.js", tests: ["one", "two"] },
-      { path: "./integration/test2.spec.js", tests: ["one", "two"] },
-    ],
-    skippedCypress: 2,
-    emojis: false,
-  })
-);
 
 const getJsonFileObj = (path) => {
   if (typeof path !== "string") {
@@ -94,35 +130,39 @@ const getJsonFileObj = (path) => {
   return jsonObj;
 };
 
+/*
+Rekurencja do wyszukiwania tego samego property
+fun()
+  map collection -> if found, save -> ifelse search for next place -> else return 
+*/
+
+const willIterate = (parent, cache, type) => {
+  if()
+};
+
+const getIt = (collection, type = "success") => {
+  // Types: ["passes", "failures", "pending", "skipped"]
+  let { results } = collection;
+  _.map(results, (testFile) => willIterate(testFile, [],  "passes"));
+  return results;
+};
+
+console.log(getIt(getJsonFileObj("cypress-combined-report.json")));
+
+const extractAllInfo = (jsonObj) => {
+  const startDate = jsonObj.stats.start;
+  const duration = jsonObj.stats.duration;
+  const totalTests = jsonObj.stats.tests;
+  const passedTests = jsonObj.stats.passes;
+  const skippedCypress = jsonObj.stats.skipped;
+  const skippedTests = jsonObj.stats.pending;
+  const otherTests = jsonObj.stats.other;
+  return {};
+};
+
 const mocha_convert = () => {
   const { path, output, noEmoji } = argv;
-
-  const { stats, results } = getJsonFileObj(path);
-
-  console.log("suites " + stats.suites);
-  console.log("tests " + stats.tests);
 };
 
 // mocha_convert();
 // module.export = mocha_convert;
-
-// Sample md template
-/*
-# Test Report
-> Run start date: ${stats.start}
-> Duration:  ${duration}
-
-## Tests run stats
-emoji total tests: 
-emoji passed: 
-emoji failed:
-emoji skipped: 
-emoji skipped by Cypress:
-emoji other:
-
-## Failed tests
-emoji [path], [test]
-emoji [path], [test]
-emoji [path], [test]
-
-*/
