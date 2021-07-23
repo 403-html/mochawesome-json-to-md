@@ -20,7 +20,7 @@ run the script
 
 > node index.js -p ./your_file_path -o ./generated.md --emoji=true
 
-that's it! You've successfuly converted json report to \_slick\* md report.
+that's it! You've successfuly converted json report to _slick_ md report.
 
 ## Options
 
