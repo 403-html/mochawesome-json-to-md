@@ -44,23 +44,23 @@ const mdTemplate = ({
   otherTests = [],
   emojis = true,
 }) => {
-// -- Sample --
-//   mdTemplate({
-//     startDate: "12.03.2021",
-//     duration: 231,
-//     totalTests: 12,
-//     passedTests: [],
-//     failedTests: [
-//       { path: "./integration/test1.spec.js", tests: ["one", "two"] },
-//       { path: "./integration/test2.spec.js", tests: ["one", "two"] },
-//     ],
-//     skippedCypress: [
-//       { path: "./integration/test1.spec.js", tests: ["one", "two"] },
-//     ],
-//     skippedTests: [],
-//     otherTests: [],
-//     emojis: true,
-//   })
+  // -- Sample --
+  //   mdTemplate({
+  //     startDate: "12.03.2021",
+  //     duration: 231,
+  //     totalTests: 12,
+  //     passedTests: [],
+  //     failedTests: [
+  //       { path: "./integration/test1.spec.js", tests: ["one", "two"] },
+  //       { path: "./integration/test2.spec.js", tests: ["one", "two"] },
+  //     ],
+  //     skippedCypress: [
+  //       { path: "./integration/test1.spec.js", tests: ["one", "two"] },
+  //     ],
+  //     skippedTests: [],
+  //     otherTests: [],
+  //     emojis: true,
+  //   })
   const genList = (emoji, list) =>
     _.map(
       list,
@@ -114,6 +114,7 @@ ${_.join(genList("❇️", otherTests), "\n")}
 `;
 };
 
+// Read json file and save it as obj
 const getJsonFileObj = (path) => {
   if (typeof path !== "string") {
     throw new Error(
@@ -130,36 +131,69 @@ const getJsonFileObj = (path) => {
   return jsonObj;
 };
 
-/*
-Rekurencja do wyszukiwania tego samego property
-fun()
-  map collection -> if found, save -> ifelse search for next place -> else return 
-*/
-
-const willIterate = (parent, cache, type) => {
-  if()
+// Reccurency return of all tests with given type
+const grabAllTestsByType = ({ type, dir, cache = [] }) => {
+  let localCache = cache;
+  if (dir[type].length > 0) {
+    _.forEach(dir[type], (uuid) => {
+      localCache.push(_.filter(dir.tests, (test) => test.uuid === uuid).pop());
+    });
+  }
+  if (dir.suites.length > 0) {
+    _.forEach(dir.suites, (suit) =>
+      grabAllTestsByType({ type: type, dir: suit, cache: localCache })
+    );
+  }
+  return localCache;
 };
 
-const getIt = (collection, type = "success") => {
-  // Types: ["passes", "failures", "pending", "skipped"]
-  let { results } = collection;
-  _.map(results, (testFile) => willIterate(testFile, [],  "passes"));
-  return results;
+// Return list of all tests from collection by types
+const getIt = (results) => {
+  const types = ["passes", "failures", "pending", "skipped"];
+  let cache = [];
+
+  _.forEach(types, (type) => {
+    let typeCache = [];
+
+    _.forEach(results, (result) => {
+      typeCache.push(
+        ...grabAllTestsByType({
+          type: type,
+          dir: result,
+        })
+      );
+    });
+
+    cache.push(typeCache);
+  });
+
+  return cache;
 };
 
-console.log(getIt(getJsonFileObj("cypress-combined-report.json")));
+// Get all needed info from parsed json object
+const extractAllInfo = ({ results, stats }) => {
+  const startDate = stats.start;
+  const duration = stats.duration;
+  const totalTests = stats.tests;
+  const otherTests = stats.other;
+  const [passedTests, failedTests, skippedTests, skippedCypress] =
+    getIt(results);
 
-const extractAllInfo = (jsonObj) => {
-  const startDate = jsonObj.stats.start;
-  const duration = jsonObj.stats.duration;
-  const totalTests = jsonObj.stats.tests;
-  const passedTests = jsonObj.stats.passes;
-  const skippedCypress = jsonObj.stats.skipped;
-  const skippedTests = jsonObj.stats.pending;
-  const otherTests = jsonObj.stats.other;
-  return {};
+  return {
+    startDate,
+    duration,
+    totalTests,
+    otherTests,
+    passedTests,
+    failedTests,
+    skippedTests,
+    skippedCypress,
+  };
 };
 
+console.log(extractAllInfo(getJsonFileObj("cypress-combined-report.json")));
+
+// main function to call converting and processing md file
 const mocha_convert = () => {
   const { path, output, noEmoji } = argv;
 };
