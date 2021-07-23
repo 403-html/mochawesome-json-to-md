@@ -10,7 +10,7 @@ const _ = require("lodash");
  *
  * --output (-o), string, "./md-reports/output.md", define path for the md file, example: "node index.js --output="./output/file.md""
  *
- * --noEmoji, boolean, false, defines whether there should be no emojis in the final markdown file, example: "node index.js --noEmoji"
+ * --emoji, boolean, true, defines whether there should be no emoji in the final markdown file, example: "node index.js --emoji=false"
  */
 
 const argv = yargs(hideBin(process.argv))
@@ -25,11 +25,11 @@ const argv = yargs(hideBin(process.argv))
     type: "string",
     default: "./md-reports/output.md",
   })
-  .option("noEmoji", {
+  .option("emoji", {
     description:
-      "defines whether there should be no emojis in the final markdown file",
+      "defines whether there should be emoji in the final markdown file",
     type: "boolean",
-    default: false,
+    default: true,
   })
   .help().argv;
 
@@ -37,78 +37,57 @@ const mdTemplate = ({
   startDate,
   duration,
   totalTests,
-  passedTests,
+  otherTests,
+  passedTests = [],
   failedTests = [],
   skippedTests = [],
   skippedCypress = [],
-  otherTests = [],
-  emojis = true,
+  emoji,
 }) => {
-  // -- Sample --
-  //   mdTemplate({
-  //     startDate: "12.03.2021",
-  //     duration: 231,
-  //     totalTests: 12,
-  //     passedTests: [],
-  //     failedTests: [
-  //       { path: "./integration/test1.spec.js", tests: ["one", "two"] },
-  //       { path: "./integration/test2.spec.js", tests: ["one", "two"] },
-  //     ],
-  //     skippedCypress: [
-  //       { path: "./integration/test1.spec.js", tests: ["one", "two"] },
-  //     ],
-  //     skippedTests: [],
-  //     otherTests: [],
-  //     emojis: true,
-  //   })
   const genList = (emoji, list) =>
     _.map(
       list,
-      ({ path, tests }) =>
-        `${emojis ? `${emoji}` : ""} Path: ${path}, tests: ${tests}`
+      ({ path, title }) =>
+        `- ${emoji ? `${emoji}` : ""} Path: ${path}, test: ${title}`
     );
 
-  return `# Test report \n
-  > Run start date: ${startDate} \n
-  > Duration: ${duration / 60}s \n
-\n
-## Tests run stats \n
-  ${emojis ? "📚 " : ""}total tests: ${totalTests || 0} \n
-  ${emojis ? "✔️  " : ""}passed: ${passedTests || 0} \n
-  ${emojis ? "❌ " : ""}failed: ${failedTests.length || 0} \n
-  ${emojis ? "🔜 " : ""}skipped: ${skippedTests.length || 0} \n
-  ${emojis ? "⚠️  " : ""}skipped by Cypress: ${skippedCypress.length || 0} \n
-  ${emojis ? "❇️  " : ""}other: ${otherTests.length || 0} \n
-\n
-## Failed tests \n
+  return `# Test report
+> Run start date: ${new Date(startDate).toLocaleString()}
+
+> Duration: ${Math.round(duration / 60)}s
+
+## Tests run stats
+- ${emoji ? "📚 " : ""}total tests: ${totalTests}
+- ${emoji ? "✔️ " : ""}passed: ${passedTests.length}
+- ${emoji ? "❌ " : ""}failed: ${failedTests.length}
+- ${emoji ? "🔜 " : ""}skipped: ${skippedTests.length}
+- ${emoji ? "⚠️ " : ""}skipped by Cypress: ${skippedCypress.length}
+- ${emoji ? "❇️ " : ""}other: ${otherTests}
+
+## Failed tests
 <details>
 <summary>Click to reveal</summary>
 <article>
+
 ${_.join(genList("💢", failedTests), "\n")}
 </article>
 </details>
-\n
-## Skipped tests \n
+
+## Skipped tests
 <details>
 <summary>Click to reveal</summary>
 <article>
+
 ${_.join(genList("🔜", skippedTests), "\n")}
 </article>
 </details>
-\n
+
 ## Skipped tests by Cypress
 <details>
 <summary>Click to reveal</summary>
 <article>
+
 ${_.join(genList("⚠️", skippedCypress), "\n")}
-</article>
-</details>
-\n
-## Other tests
-<details>
-<summary>Click to reveal</summary>
-<article>
-${_.join(genList("❇️", otherTests), "\n")}
 </article>
 </details>
 `;
@@ -132,17 +111,23 @@ const getJsonFileObj = (path) => {
 };
 
 // Reccurency return of all tests with given type
-const grabAllTestsByType = ({ type, dir, cache = [] }) => {
+const grabAllTestsByType = ({ type, dir, path = dir.file, cache = [] }) => {
   let localCache = cache;
   if (dir[type].length > 0) {
-    _.forEach(dir[type], (uuid) => {
-      localCache.push(_.filter(dir.tests, (test) => test.uuid === uuid).pop());
-    });
+    for (const uuid of dir[type]) {
+      const foundTestByUuid = _.find(dir.tests, (test) => test.uuid === uuid);
+      localCache.push({ path, ...foundTestByUuid });
+    }
   }
   if (dir.suites.length > 0) {
-    _.forEach(dir.suites, (suit) =>
-      grabAllTestsByType({ type: type, dir: suit, cache: localCache })
-    );
+    for (const suit of dir.suites) {
+      grabAllTestsByType({
+        type: type,
+        dir: suit,
+        path,
+        cache: localCache,
+      });
+    }
   }
   return localCache;
 };
@@ -191,12 +176,20 @@ const extractAllInfo = ({ results, stats }) => {
   };
 };
 
-console.log(extractAllInfo(getJsonFileObj("cypress-combined-report.json")));
-
 // main function to call converting and processing md file
 const mocha_convert = () => {
-  const { path, output, noEmoji } = argv;
+  const { path, output, emoji } = argv;
+
+  const outputObj = getJsonFileObj(path);
+  const convertedReport = extractAllInfo(outputObj);
+  const generatedMd = mdTemplate({ ...convertedReport, emoji });
+
+  fs.writeFile(output, generatedMd, (err) => {
+    if (err) {
+      throw new Error(err);
+    }
+  });
 };
 
-// mocha_convert();
+mocha_convert();
 // module.export = mocha_convert;
