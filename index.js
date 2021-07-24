@@ -34,6 +34,7 @@ const argv = yargs(hideBin(process.argv))
   })
   .help().argv;
 
+// Create md string based on all informations
 const mdTemplate = ({
   startDate,
   duration,
@@ -193,4 +194,3 @@ const mocha_convert = () => {
 };
 
 mocha_convert();
-// module.export = mocha_convert;
