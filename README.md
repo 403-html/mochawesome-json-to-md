@@ -23,17 +23,17 @@ that's it! You've successfuly converted json report to _slick_ md report.
   - string
   - **required**
   - define path to the json report
-  - example: `node index.js --path ./reports/file.json`
+  - example: `mochawesome-json-to-md --path ./reports/file.json`
 - -o, --output
   - string
   - default: `./md-reports/output.md`
   - define path for the output md file
-  - example: `node index.js --output="./output/file.md"`
+  - example: `mochawesome-json-to-md --output="./output/file.md"`
 - --emoji
   - boolean
   - default: true
-  - defines whether there should be no emoji in the final markdown file
-  - example: `node index.js --emoji=false`
+  - defines whether there should be emoji in the final markdown file
+  - example: `mochawesome-json-to-md --emoji=false`
 
 ## License
 
