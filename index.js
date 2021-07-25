@@ -36,8 +36,12 @@ const argv = yargs(hideBin(process.argv))
 
 // Create md string based on all informations
 const mdTemplate = ({
+  titleReport = "Test report",
   startDate,
+  isDateVisible = true,
   duration,
+  isDurationVisible = true,
+  isStatsVisible = true,
   totalTests,
   otherTests,
   passedTests = [],
@@ -53,45 +57,44 @@ const mdTemplate = ({
         `- ${emoji ? `${emoji}` : ""} Path: ${path}, test: ${title}`
     );
 
-  return `# Test report
-> Run start date: ${new Date(startDate).toLocaleString()}
+  const genDate = isDateVisible
+    ? `> Run start date: ${new Date(startDate).toLocaleString()} \n`
+    : "";
+  const genDuration = isDurationVisible
+    ? `> Duration: ${Math.round(duration / 60)}s \n`
+    : "";
 
-> Duration: ${Math.round(duration / 60)}s
+  const genStats = isStatsVisible
+    ? `## Tests run stats
+  - ${emoji ? "📚 " : ""}total tests: ${totalTests}
+  - ${emoji ? "✔️ " : ""}passed: ${passedTests.length}
+  - ${emoji ? "❌ " : ""}failed: ${failedTests.length}
+  - ${emoji ? "🔜 " : ""}skipped: ${skippedTests.length}
+  - ${emoji ? "⚠️ " : ""}skipped by Cypress: ${skippedCypress.length}
+  - ${emoji ? "❇️ " : ""}other: ${otherTests} \n`
+    : "";
 
-## Tests run stats
-- ${emoji ? "📚 " : ""}total tests: ${totalTests}
-- ${emoji ? "✔️ " : ""}passed: ${passedTests.length}
-- ${emoji ? "❌ " : ""}failed: ${failedTests.length}
-- ${emoji ? "🔜 " : ""}skipped: ${skippedTests.length}
-- ${emoji ? "⚠️ " : ""}skipped by Cypress: ${skippedCypress.length}
-- ${emoji ? "❇️ " : ""}other: ${otherTests}
+  const genSection = ({ title, emoji, collection }) => {
+    return `## ${title}
+  <details>
+  <summary>Click to reveal</summary>
+  <article>
+  ${_.join(genList(emoji, collection), "\n")}
+  </article>
+  </details>\n`;
+  };
 
-## Failed tests
-<details>
-<summary>Click to reveal</summary>
-<article>
-
-${_.join(genList("💢", failedTests), "\n")}
-</article>
-</details>
-
-## Skipped tests
-<details>
-<summary>Click to reveal</summary>
-<article>
-
-${_.join(genList("🔜", skippedTests), "\n")}
-</article>
-</details>
-
-## Skipped tests by Cypress
-<details>
-<summary>Click to reveal</summary>
-<article>
-
-${_.join(genList("⚠️", skippedCypress), "\n")}
-</article>
-</details>
+  return `# ${titleReport}
+${genDate}
+${genDuration}
+${genStats}
+${genSection({ title: "Failed tests", emoji: "💢", collection: failedTests })}
+${genSection({ title: "Skipped tests", emoji: "🔜", collection: skippedTests })}
+${genSection({
+  title: "Skipped tests by Cypress",
+  emoji: "⚠️",
+  collection: skippedCypress,
+})}
 `;
 };
 
