@@ -4,16 +4,6 @@ const yargs = require("yargs/yargs");
 const { hideBin } = require("yargs/helpers");
 const _ = require("lodash");
 
-/* Arguments we can pass
- * argument (alias), type, default, description, example
- *****************************************
- * --path (-p), string, undefined ,define path to the report, example: "node index.js --path="./reports/file.json""
- *
- * --output (-o), string, "./md-reports/output.md", define path for the md file, example: "node index.js --output="./output/file.md""
- *
- * --emoji, boolean, true, defines whether there should be no emoji in the final markdown file, example: "node index.js --emoji=false"
- */
-
 const argv = yargs(hideBin(process.argv))
   .option("path", {
     alias: "p",
@@ -26,74 +16,154 @@ const argv = yargs(hideBin(process.argv))
     type: "string",
     default: "./md-reports/output.md",
   })
-  .option("emoji", {
+  .option("showEmoji", {
     description:
       "defines whether there should be emoji in the final markdown file",
     type: "boolean",
     default: true,
   })
+  .option("reportTitle", {
+    description: "define report title in the the md file",
+    type: "string",
+    default: "Test report",
+  })
+  .option("showDate", {
+    description:
+      "defines whether there should be visible test date in the final markdown file",
+    type: "boolean",
+    default: true,
+  })
+  .option("showDuration", {
+    description:
+      "defines whether there should be visible duration of the test in the final markdown file",
+    type: "boolean",
+    default: true,
+  })
+  .option("showStats", {
+    description:
+      "defines whether there should be visible high level stats of the test in the final markdown file",
+    type: "boolean",
+    default: true,
+  })
+  .option("showPassed", {
+    description:
+      "defines whether there should be visible section with passed tests in the final markdown file",
+    type: "boolean",
+    default: false,
+  })
+  .option("showFailed", {
+    description:
+      "defines whether there should be visible section with failed tests in the final markdown file",
+    type: "boolean",
+    default: true,
+  })
+  .option("showSkipped", {
+    description:
+      "defines whether there should be visible section with skipped by user tests in the final markdown file",
+    type: "boolean",
+    default: true,
+  })
+  .option("showCypress", {
+    description:
+      "defines whether there should be visible section with skipped by Cypress tests in the final markdown file",
+    type: "boolean",
+    default: true,
+  })
+  .scriptName("mochawesome-json-to-md")
+  .usage("$0 -p file/path.json -o file/path.md [args]")
+  .epilogue(
+    "for more information, visit https://github.com/htd-tstepien/mochawesome-json-to-md"
+  )
   .help().argv;
 
 // Create md string based on all informations
 const mdTemplate = ({
-  titleReport = "Test report",
+  reportTitle,
   startDate,
-  isDateVisible = true,
+  showDate,
   duration,
-  isDurationVisible = true,
-  isStatsVisible = true,
+  showDuration,
+  showStats,
   totalTests,
   otherTests,
   passedTests = [],
+  showPassed,
   failedTests = [],
+  showFailed,
   skippedTests = [],
+  showSkipped,
   skippedCypress = [],
-  emoji,
+  showCypress,
+  showEmoji,
 }) => {
-  const genList = (emoji, list) =>
-    _.map(
-      list,
-      ({ path, title }) =>
-        `- ${emoji ? `${emoji}` : ""} Path: ${path}, test: ${title}`
-    );
-
-  const genDate = isDateVisible
+  const genDate = showDate
     ? `> Run start date: ${new Date(startDate).toLocaleString()} \n`
     : "";
-  const genDuration = isDurationVisible
+  const genDuration = showDuration
     ? `> Duration: ${Math.round(duration / 60)}s \n`
     : "";
 
-  const genStats = isStatsVisible
+  const genStats = showStats
     ? `## Tests run stats
-  - ${emoji ? "📚 " : ""}total tests: ${totalTests}
-  - ${emoji ? "✔️ " : ""}passed: ${passedTests.length}
-  - ${emoji ? "❌ " : ""}failed: ${failedTests.length}
-  - ${emoji ? "🔜 " : ""}skipped: ${skippedTests.length}
-  - ${emoji ? "⚠️ " : ""}skipped by Cypress: ${skippedCypress.length}
-  - ${emoji ? "❇️ " : ""}other: ${otherTests} \n`
+  - ${showEmoji ? "📚 " : ""}total tests: ${totalTests}
+  - ${showEmoji ? "✔️ " : ""}passed: ${passedTests.length}
+  - ${showEmoji ? "❌ " : ""}failed: ${failedTests.length}
+  - ${showEmoji ? "🔜 " : ""}skipped: ${skippedTests.length}
+  - ${showEmoji ? "⚠️ " : ""}skipped by Cypress: ${skippedCypress.length}
+  - ${showEmoji ? "❇️ " : ""}other: ${otherTests} \n`
     : "";
 
-  const genSection = ({ title, emoji, collection }) => {
-    return `## ${title}
+  const genList = (emoji, list) => {
+    let cacheList = [];
+    _.forEach(list, ({ path, title }) =>
+      cacheList.push(
+        `- ${showEmoji ? `${emoji}` : ""} Path: ${path}, test: ${title}`
+      )
+    );
+    return _.join(cacheList, "\n");
+  };
+
+  const genSection = ({ title, emoji, collection, check }) => {
+    if (check) {
+      return `## ${title}
   <details>
   <summary>Click to reveal</summary>
   <article>
-  ${_.join(genList(emoji, collection), "\n")}
+  ${genList(emoji, collection)}
   </article>
   </details>\n`;
+    } else {
+      return "";
+    }
   };
 
-  return `# ${titleReport}
+  return `# ${reportTitle}
 ${genDate}
 ${genDuration}
 ${genStats}
-${genSection({ title: "Failed tests", emoji: "💢", collection: failedTests })}
-${genSection({ title: "Skipped tests", emoji: "🔜", collection: skippedTests })}
+${genSection({
+  title: "Passed tests",
+  emoji: "✔️",
+  collection: passedTests,
+  check: showPassed,
+})}
+${genSection({
+  title: "Failed tests",
+  emoji: "💢",
+  collection: failedTests,
+  check: showFailed,
+})}
+${genSection({
+  title: "Skipped tests",
+  emoji: "🔜",
+  collection: skippedTests,
+  check: showSkipped,
+})}
 ${genSection({
   title: "Skipped tests by Cypress",
   emoji: "⚠️",
   collection: skippedCypress,
+  check: showCypress,
 })}
 `;
 };
@@ -183,11 +253,34 @@ const extractAllInfo = ({ results, stats }) => {
 
 // main function to call converting and processing md file
 const mocha_convert = () => {
-  const { path, output, emoji } = argv;
+  const {
+    path,
+    output,
+    showEmoji,
+    reportTitle,
+    showDate,
+    showDuration,
+    showStats,
+    showPassed,
+    showFailed,
+    showSkipped,
+    showCypress,
+  } = argv;
 
   const outputObj = getJsonFileObj(path);
   const convertedReport = extractAllInfo(outputObj);
-  const generatedMd = mdTemplate({ ...convertedReport, emoji });
+  const generatedMd = mdTemplate({
+    ...convertedReport,
+    showEmoji,
+    reportTitle,
+    showDate,
+    showDuration,
+    showStats,
+    showPassed,
+    showFailed,
+    showSkipped,
+    showCypress,
+  });
 
   fs.writeFile(output, generatedMd, (err) => {
     if (err) {
