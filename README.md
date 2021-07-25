@@ -20,61 +20,19 @@ that's it! You've successfuly converted json report to _slick_ md report.
 
 ## Options
 
-- -p, --path
-  - string
-  - **required**
-  - define path to the json report
-  - example: `mochawesome-json-to-md --path ./reports/file.json`
-- -o, --output
-  - string
-  - default: `./md-reports/output.md`
-  - define path for the output md file
-  - example: `mochawesome-json-to-md --path ./reports/file.json --output ./output/file.md`
-- --showEmoji
-  - boolean
-  - default: `true`
-  - defines whether there should be emoji in the final markdown file
-  - example: `mochawesome-json-to-md --path ./reports/file.json --output ./output/file.md --emoji=false`
-- reportTitle
-  - string
-  - default: `Test report`
-  - define report title in the the md file
-  - example: `mochawesome-json-to-md --path ./reports/file.json --output ./output/file.md --reportTitle="New title"`
-- showDate
-  - boolean
-  - default: `true`
-  - whether there should be visible test date in the final markdown file
-  - example: `mochawesome-json-to-md --path ./reports/file.json --output ./output/file.md --showDate=true`
-- showDuration
-  - boolean
-  - default: `true`
-  - whether there should be visible duration of the test in the final markdown file
-  - example: `mochawesome-json-to-md --path ./reports/file.json --output ./output/file.md --showDuration=true`
-- showStats
-  - boolean
-  - default: `true`
-  - defines whether there should be visible high level stats of the test in the final markdown file
-  - example: `mochawesome-json-to-md --path ./reports/file.json --output ./output/file.md --showStats=true`
-- showPassed
-  - boolean
-  - default: `false`
-  - defines whether there should be visible section with passed tests in the final markdown file
-  - example: `mochawesome-json-to-md --path ./reports/file.json --output ./output/file.md --showPassed=false`
-- showFailed
-  - boolean
-  - default: `true`
-  - defines whether there should be visible section with failed tests in the final markdown file
-  - example: `mochawesome-json-to-md --path ./reports/file.json --output ./output/file.md --showFailed=true`
-- showSkipped
-  - boolean
-  - default: `true`
-  - defines whether there should be visible section with skipped by user tests in the final markdown file
-  - example: `mochawesome-json-to-md --path ./reports/file.json --output ./output/file.md --showSkipped=true`
-- showCypress
-  - boolean
-  - default: `true`
-  - defines whether there should be visible section with skipped by Cypress tests in the final markdown file
-  - example: `mochawesome-json-to-md --path ./reports/file.json --output ./output/file.md --showCypress=true`
+| Command        | Type    | Default                  | Description                                                                                              | Example                                                                                                 |
+| -------------- | ------- | ------------------------ | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| -p, --path     | string  | **required**             | define path to the json report                                                                           | `mochawesome-json-to-md --path ./reports/file.json`                                                     |
+| -o, --output   | string  | `./md-reports/output.md` | define path for the output md file                                                                       | `mochawesome-json-to-md --path ./reports/file.json --output ./output/file.md`                           |
+| --showEmoji    | boolean | `true`                   | defines whether there should be emoji in the final markdown file                                         | `mochawesome-json-to-md --path ./reports/file.json --output ./output/file.md --emoji=false`             |
+| --reportTitle  | string  | `Test report`            | define report title in the final md file                                                                 | `mochawesome-json-to-md --path ./reports/file.json --output ./output/file.md --reportTitle="New title"` |
+| --showDate     | boolean | `true`                   | defines whether there should be visible test date in the final markdown file                             | `mochawesome-json-to-md --path ./reports/file.json --output ./output/file.md --showDate=true`           |
+| --showDuration | boolean | `true`                   | defines whether there should be visible duration of the test in the final markdown file                  | `mochawesome-json-to-md --path ./reports/file.json --output ./output/file.md --showDuration=true`       |
+| --showStats    | boolean | `true`                   | defines whether there should be visible high level stats of the test in the final markdown file          | `mochawesome-json-to-md --path ./reports/file.json --output ./output/file.md --showStats=true`          |
+| --showPassed   | boolean | `false`                  | defines whether there should be visible section with passed tests in the final markdown file             | `mochawesome-json-to-md --path ./reports/file.json --output ./output/file.md --showPassed=false`        |
+| --showFailed   | boolean | `true`                   | defines whether there should be visible section with failed tests in the final markdown file             | `mochawesme-json-to-md --path ./reports/file.json --output ./output/file.md --showFailed=true`          |
+| --showSkipped  | boolean | `true`                   | defines whether there should be visible section with skipped by user tests in the final markdown file    | `mchawesome-json-to-md --path ./reports/file.json --output ./output/file.md --showSkipped=true`         |
+| --showCypress  | boolean | `true`                   | defines whether there should be visible section with skipped by Cypress tests in the final markdown file | `mochawesome-json-to-md --path ./reports/file.json --output ./output/file.md --showCypress=true`        |
 
 ## License
 

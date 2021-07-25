@@ -23,7 +23,7 @@ const argv = yargs(hideBin(process.argv))
     default: true,
   })
   .option("reportTitle", {
-    description: "define report title in the the md file",
+    description: "define report title in the final md file",
     type: "string",
     default: "Test report",
   })
