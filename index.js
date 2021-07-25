@@ -129,7 +129,8 @@ const mdTemplate = ({
   <details>
   <summary>Click to reveal</summary>
   <article>
-  ${genList(emoji, collection)}
+  
+${genList(emoji, collection)}
   </article>
   </details>\n`;
     } else {
