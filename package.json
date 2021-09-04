@@ -10,6 +10,9 @@
   "scripts": {
     "build": "parcel build"
   },
+  "files": [
+    "dist/index.js"
+  ],
   "type": "commonjs",
   "repository": {
     "type": "git",
