@@ -58,6 +58,7 @@ If you have any ideas how to improve/fix the project, create issue where you des
 - [ ] Remove/find substitute for `yargs` package
 - [ ] Add support for TypeScript
 - [ ] Add few samples of markdown templates to choose from
+- [ ] Add unit tests (topic started in [this issue](https://github.com/403-html/mochawesome-json-to-md/issues/5))
 - [ ] Rewrite and add more documentation
   - [ ] Readme
   - [ ] Contributing guidelines
