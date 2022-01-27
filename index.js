@@ -100,7 +100,7 @@ const mdTemplate = ({
     ? `> Run start date: ${new Date(startDate).toLocaleString()} \n`
     : "";
   const genDuration = showDuration
-    ? `> Duration: ${Math.round(duration / 60)}s \n`
+    ? `> Duration: ${Math.round(duration / 1000)}s \n`
     : "";
 
   const genStats = showStats
