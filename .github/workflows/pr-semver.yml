@@ -1,0 +1,53 @@
+name: PR Semver
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  update-version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Get current prefix
+        id: branch-prefix
+        run: echo "::set-output name=prefix::$(echo $GITHUB_REF | sed -E 's/^refs\/heads\/(.*)\/.*/\1/')"
+
+      - name: Check if branch prefix is valid (major, minor, patch)
+        run: |
+          echo "Checking branch prefix..."
+          echo "branch prefix: ${{ steps.branch-prefix.outputs.prefix }}"
+          if [[ ${{ steps.branch-prefix.outputs.prefix }} != "major" && ${{ steps.branch-prefix.outputs.prefix }} != "minor" && ${{ steps.branch-prefix.outputs.prefix }} != "patch" ]]; then
+            echo "Branch prefix is not valid, exiting..."
+            exit 1
+          fi
+          echo "Branch prefix is valid"
+
+      - name: Set next version number based on prefix
+        run: |
+          echo "Getting next version number..."
+          if [ "${{ steps.branch-prefix.outputs.prefix }}" == "major" ]; then
+            echo "Bumping major version..."
+            npm --no-git-tag-version version major
+          elif [ "${{ steps.branch-prefix.outputs.prefix }}" == "minor" ]; then
+            echo "Bumping minor version..."
+            npm --no-git-tag-version version minor
+          elif [ "${{ steps.branch-prefix.outputs.prefix }}" == "patch" ]; then
+            echo "Bumping patch version..."
+            npm --no-git-tag-version version patch
+          else
+            echo "Error: working branch prefix not found"
+            exit 1
+          fi
+      - name: Read new version number
+        id: new-version
+        run: echo "::set-output name=version::$(npm --no-git-tag-version version)"
+      - name: Commit and push changes to working branch
+        run: |
+          echo "Committing and pushing changes..."
+          git config --global user.email "${{ secrets.MY_EMAIL }}"
+          git config --global user.name "${{ secrets.MY_USERNAME }}"
+          git add .
+          git commit -m "chore(release): Bump version to ${{ steps.new-version.outputs.version }}"
+          git push origin HEAD
