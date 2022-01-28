@@ -10,7 +10,7 @@ This project uses GitHub's issue tracker to track issues and ideas.
 
 Overall don't branch out of anything else than `main` branch. If you want to add many new features, you should create a new branch for each of it. **Don't make an aggregate branch**.
 
-### Naming
+### Branch naming
 
 - use `major/` prefix for major changes
 - use `minor/` prefix for minor changes
@@ -26,7 +26,7 @@ For example:
 
 ## Pull requests and commits
 
-### Naming
+### PR and commits naming
 
 Your PR description should be in the following format:
 
