@@ -24,14 +24,28 @@ For example:
 
 > patch/something-improved
 
-## Pull requests
+## Pull requests and commits
 
 ### Naming
+
+Your PR description should be in the following format:
 
 - use `feat:` prefix for feature requests
 - use `bug:` prefix for bug fixes
 - use `docs:` prefix for documentation only changes (example: this CONTRIBUTING.md or README.md)
 - use `chore:` prefix for changes that don't affect the meaning of the code (build process, package manager, etc.)
+
+Same for commits, but PRs affecting the changelog so they'll be seen finally.
+
+### Creating a PR
+
+Assign yourself to the PR.
+
+If you're creating PR, but it's not ready for review - please create it as a draft.
+
+If PR is ready for review remove it from draft status, please also add a label `ready-for-review` to it.
+
+If it's possible _link_ your PR to proper issue which this PR is resolving.
 
 ### Merging
 
