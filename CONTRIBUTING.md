@@ -1,6 +1,6 @@
 # Contributing
 
-This docs are containing guidlines for contributing to the project.
+These docs contain guidelines for contributing to the project.
 
 ## Issue Tracker
 
@@ -8,7 +8,7 @@ This project uses GitHub's issue tracker to track issues and ideas.
 
 ## Branching
 
-Overall don't branch out of anything else than `main` branch. If you want to add many new features, you should create a new branch for each of it. **Don't make an aggregate branch**.
+Overall don't branch out of anything (else) than `main` branch. If you want to add many new features, you should create a new branch for each of it. **Don't make an aggregate branch**.
 
 ### Branch naming
 
@@ -35,7 +35,7 @@ Your PR description should be in the following format:
 - use `docs:` prefix for documentation only changes (example: this CONTRIBUTING.md or README.md)
 - use `chore:` prefix for changes that don't affect the meaning of the code (build process, package manager, etc.)
 
-Same for commits, but PRs affecting the changelog so they'll be seen finally.
+Same for commits, but PRs affecting the changelog, so they'll be seen finally.
 
 **Only** difference in commits naming is that commits which change something for release (like bumping version of the package) should be tagged with description "release", like `chore(release): bump version`.
 
