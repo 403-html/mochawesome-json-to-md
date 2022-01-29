@@ -44,7 +44,7 @@ Just write the issue. I'll try to answer as fast as possible.
 
 You can contribute to the project by opening an issue or creating a pull request.
 
-But first, please, read the [Contributing](./CONTRIBUTING.md) file. It contains all the rules and guidelines for the project. If you have any questions, please, ask them in the [Issues](https://github.com/403-html/mochawesome-json-to-md/issues) section. I'll try to answer as fast as possible.
+But first, please, read the [Contributing](./CONTRIBUTING.md#Contributing) file. It contains all the rules and guidelines for the project. If you have any questions, please, ask them in the [Issues](https://github.com/403-html/mochawesome-json-to-md/issues) section. I'll try to answer as fast as possible.
 
 ## Plans and achievements for this project
 
