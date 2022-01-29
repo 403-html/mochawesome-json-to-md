@@ -61,4 +61,4 @@ We are using semantic versioning. You can find more information about it [here](
 
 ### Usage
 
-You don't need to change manually version number. It will be automatically updated after PR review and before merging. It'll base on **PROPER branch** prefix.
+Before you want to merge a PR, first merge the main branch to your branch. Then set the `semver` label to your PR. You don't have to change the version number manually. Change will be based on the **your PROPER branch** prefix.
