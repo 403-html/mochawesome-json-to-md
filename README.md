@@ -42,7 +42,9 @@ Just write the issue. I'll try to answer as fast as possible.
 
 ## How I can contribute to the project?
 
-If you have any ideas how to improve/fix the project, create issue where you describe what you want to add/remove from the project. If you have created code for this already, make a PR and mention issue where you described what's going on with this change.
+You can contribute to the project by opening an issue or creating a pull request.
+
+But first, please, read the [Contributing](./CONTRIBUTING.md) file. It contains all the rules and guidelines for the project. If you have any questions, please, ask them in the [Issues](https://github.com/403-html/mochawesome-json-to-md/issues) section. I'll try to answer as fast as possible.
 
 ## Plans and achievements for this project
 
@@ -61,8 +63,9 @@ If you have any ideas how to improve/fix the project, create issue where you des
 - [ ] Add unit tests (topic started in [this issue](https://github.com/403-html/mochawesome-json-to-md/issues/5))
 - [ ] Rewrite and add more documentation
   - [ ] Readme
-  - [ ] Contributing guidelines
+  - [x] <s> Contributing guidelines </s>
   - [ ] Code of conduct
+- [x] <s> Add workflow for automated semantic versioning </s>
 
 ## License
 
