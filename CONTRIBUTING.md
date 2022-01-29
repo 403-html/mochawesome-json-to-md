@@ -37,6 +37,8 @@ Your PR description should be in the following format:
 
 Same for commits, but PRs affecting the changelog so they'll be seen finally.
 
+**Only** difference in commits naming is that commits which change something for release (like bumping version of the package) should be tagged with description "release", like `chore(release): bump version`.
+
 ### Creating a PR
 
 Assign yourself to the PR.
