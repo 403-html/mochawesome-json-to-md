@@ -2,7 +2,6 @@
 const fs = require("fs");
 const yargs = require("yargs/yargs");
 const { hideBin } = require("yargs/helpers");
-const _ = require("lodash");
 
 const argv = yargs(hideBin(process.argv))
   .option("path", {
@@ -115,12 +114,15 @@ const mdTemplate = ({
 
   const genList = (emoji, list) => {
     let cacheList = [];
-    _.forEach(list, ({ path, title }) =>
+
+    for (let iterator = 0; iterator < list.length; iterator++) {
+      const { path, title } = list[iterator];
       cacheList.push(
         `- ${showEmoji ? `${emoji}` : ""} Path: ${path}, test: ${title}`
-      )
-    );
-    return _.join(cacheList, "\n");
+      );
+    }
+
+    return cacheList.join("\n");
   };
 
   const genSection = ({ title, emoji, collection, check }) => {
@@ -191,7 +193,7 @@ const grabAllTestsByType = ({ type, dir, path = dir.file, cache = [] }) => {
   let localCache = cache;
   if (dir[type].length > 0) {
     for (const uuid of dir[type]) {
-      const foundTestByUuid = _.find(dir.tests, (test) => test.uuid === uuid);
+      const foundTestByUuid = dir.tests.find((test) => test.uuid === uuid);
       localCache.push({ path, ...foundTestByUuid });
     }
   }
@@ -213,10 +215,10 @@ const getIt = (results) => {
   const types = ["passes", "failures", "pending", "skipped"];
   let cache = [];
 
-  _.forEach(types, (type) => {
+  types.forEach((type) => {
     let typeCache = [];
 
-    _.forEach(results, (result) => {
+    results.forEach((result) => {
       typeCache.push(
         ...grabAllTestsByType({
           type: type,
