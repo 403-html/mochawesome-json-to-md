@@ -29,5 +29,8 @@
   "homepage": "https://github.com/htd-tstepien/mochawesome-json-to-md#readme",
   "dependencies": {
     "yargs": "^17.0.1"
+  },
+  "devDependencies": {
+    "eslint": "^8.8.0"
   }
 }
