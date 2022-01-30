@@ -10,12 +10,16 @@ jobs:
     if: ${{ github.event.label.name == 'semver' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-
-      - name: reattach HEAD
+      - name: Reattach HEAD
         uses: actions/checkout@v2
         with:
           ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Merge main branch to PR branch
+        uses: pr-mpt/actions-merge-branch@v2
+        with:
+          from: "origin/main"
 
       - name: Get current prefix
         id: branch-prefix
@@ -30,6 +34,7 @@ jobs:
             exit 1
           fi
           echo "Branch prefix is valid"
+
       - name: Set next version number based on prefix
         run: |
           echo "Getting next version number..."
@@ -46,11 +51,13 @@ jobs:
             echo "Error: working branch prefix not found"
             exit 1
           fi
+
       - name: Setup git
         run: |
           echo "Setting up git..."
           git config --global user.email "${{ secrets.MY_EMAIL }}"
           git config --global user.name "${{ secrets.MY_USERNAME }}"
+
       - name: Commit and push changes to working branch
         run: |
           echo "Committing changes..."
