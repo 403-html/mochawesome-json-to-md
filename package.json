@@ -7,11 +7,11 @@
     "mochawesome-json-to-md": "./dist/index.js"
   },
   "scripts": {
-    "eslint": "eslint --ext .js ./",
+    "eslint": "eslint --ext .ts ./src",
     "build": "tsc -p tsconfig.json",
     "watch": "tsc -w -p tsconfig.json"
   },
-  "type": "commonjs",
+  "type": "module",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/htd-tstepien/mochawesome-json-to-md.git"

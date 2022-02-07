@@ -1,38 +1,26 @@
 #!/usr/bin/env node
-import fs from "fs";
+import "./arguments";
+import { readFile, writeFile } from "./fsManipulate";
+import { replaceTemplate } from "./templateManipulation";
 
-import yargs from "yargs";
+const main = (): void => {
+  // Get arguments
+  const [, , reportPath, outputPath, templatePath] = process.argv;
 
-const argv = yargs
-  .usage("Usage: $0 -p ./report.json -o ./output.md [options]")
-  .option("path", {
-    alias: "p",
-    describe: "Path to the report JSON file",
-    type: "string",
-    // demandOption: true,
-    example: "./report.json",
-  })
-  .option("output", {
-    alias: "o",
-    describe: "Path to the output MD file",
-    type: "string",
-    // demandOption: true,
-    example: "./output-report.md",
-  })
-  .option("template", {
-    alias: "t",
-    describe: "Path to the template MD file",
-    type: "string",
-    demandOption: false,
-    default: "./templates/template.md",
-  })
-  .help("h").argv;
+  // Read the raport file
+  const { stats, results } = JSON.parse(readFile(reportPath));
 
-const readTemplate = (path: string): string => {
-  return fs.readFileSync(path, "utf8");
+  // Read the template file
+  const template = readFile(templatePath);
+
+  // Replace the template with the report data
+  const output = replaceTemplate(template, stats, results);
+
+  // Generate the output
+  writeFile(outputPath, output);
 };
 
-// TODO: process the report with the template
+main();
 
 // -----------------------------------------------------------------------------
 // Test dev data
