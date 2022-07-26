@@ -2,6 +2,21 @@
 
 These docs contain guidelines for contributing to the project.
 
+## Table of contents
+
+- [Contributing](#contributing)
+  - [Table of contents](#table-of-contents)
+  - [Issue Tracker](#issue-tracker)
+  - [Branching](#branching)
+    - [Branch naming](#branch-naming)
+  - [Pull requests and commits](#pull-requests-and-commits)
+    - [PR and commits naming](#pr-and-commits-naming)
+    - [Creating a PR](#creating-a-pr)
+    - [Merging](#merging)
+  - [Editing](#editing)
+  - [Versioning](#versioning)
+    - [Usage](#usage)
+
 ## Issue Tracker
 
 This project uses GitHub's issue tracker to track issues and ideas.
@@ -52,6 +67,10 @@ If it's possible _link_ your PR to proper issue which this PR is resolving.
 ### Merging
 
 You can have as many commits as you wish but before giving for review please consider rebasing your branch to clear the commit list - so it'll leave cleaner repo after merging.
+
+## Editing
+
+Don't edit files in `./dist/` folder. There will be a new release every time you push to `main` branch from PR.
 
 ## Versioning
 
