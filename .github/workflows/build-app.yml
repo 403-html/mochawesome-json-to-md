@@ -1,0 +1,37 @@
+name: Build the app
+on:
+  workflow_run:
+    workflows:
+      - ESlint Check
+    types:
+      - completed
+jobs:
+  build:
+    name: Build the app and push to github
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: borales/actions-yarn@v3.0.0
+        with:
+          cmd: install
+
+      - uses: borales/actions-yarn@v3.0.0
+        with:
+          cmd: build
+
+      - name: confirm dist folder is created
+        run: if [ ! -d dist ]; then echo "dist folder not created"; exit 1; fi
+
+      - name: Setup git
+        run: |
+          echo "Setting up git..."
+          git config --global user.email "${{ secrets.MY_EMAIL }}"
+          git config --global user.name "${{ secrets.MY_USERNAME }}"
+
+      - name: Commit dist/ and push changes to working branch
+        run: |
+          echo "Committing changes..."
+          git add dist/
+          git commit -am "chore: Workflow: Build the app"
+          git push origin HEAD
