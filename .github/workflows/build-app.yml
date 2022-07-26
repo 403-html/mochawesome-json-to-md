@@ -5,6 +5,9 @@ on:
       - ESlint Check
     types:
       - completed
+    branches:
+      - master
+      - major/v1.0.0
 jobs:
   build:
     name: Build the app and push to github
