@@ -35,6 +35,6 @@ jobs:
       - name: Commit dist/ and push changes to working branch
         run: |
           echo "Committing changes..."
-          git add dist/
+          git add --force dist/
           git commit -am "chore: Workflow: Build the app"
           git push origin HEAD
