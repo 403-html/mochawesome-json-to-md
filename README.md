@@ -9,6 +9,7 @@
   - [Arguments](#arguments)
   - [Templates](#templates)
     - [Writing own templates](#writing-own-templates)
+      - [Possible tags](#possible-tags)
   - [Where can I get more help, if I need it?](#where-can-i-get-more-help-if-i-need-it)
   - [How I can contribute to the project?](#how-i-can-contribute-to-the-project)
   - [Plans and achievements for this project](#plans-and-achievements-for-this-project)
@@ -48,6 +49,35 @@ that's it! You've successfuly converted json report to _slick_ md report.
 ## Templates
 
 ### Writing own templates
+
+For writing own templates you can use `-t` argument to specify path to your template file.
+Templates are written with _tags_ and _tags blocks_.
+Tags are written with `<% tag %>` symbol. They are used to insert a single data element into the template, such as showing the date the test was performed.
+There are also tags blocks, which are started like tags `<% tag %>`, but also **should** be closed with `</% tag %>` symbol. Every block has unique set of own tags. For example:
+
+```md
+# Some title
+<% date %>
+
+## Tests list
+<% passed %>
+- <% path %> has been runned for <% duration %> seconds.
+</% passed %>
+```
+
+will produce:
+
+```md
+# Some title
+01.01.1970 21:37:00
+
+## Tests list
+- /path/to/test1.spec.js has been runned for 10 seconds.
+- /path/to/test2.spec.js has been runned for 5 seconds.
+- /path/to/test3.spec.js has been runned for 15 seconds.
+```
+
+#### Possible tags
 
 ## Where can I get more help, if I need it?
 
