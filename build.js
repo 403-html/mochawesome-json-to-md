@@ -8,7 +8,8 @@ const { dependencies, peerDependencies } = JSON.parse(
 const sharedConfig = {
   entryPoints: ["src/index.ts"],
   bundle: true,
-  minify: true
+  minify: true,
+  treeShaking: true
 };
 
 build({
