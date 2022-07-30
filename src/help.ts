@@ -19,6 +19,7 @@ const argvList: ArgvListI[] = [
   },
   {
     argvs: ["--output", "-o"],
+    default: "./generated-report.md",
     description: "define path for the md file"
   },
   {
@@ -49,9 +50,6 @@ const normalizeArgvsName = (): void => {
     argument.argvs.push(diffProcessedArgvs[index]);
   });
 };
-
-// string:
-// white(argvs) default: white(default) green(description)
 
 const argvsString = (): string => {
   normalizeArgvsName();
