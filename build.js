@@ -14,7 +14,8 @@ const sharedConfig = {
 build({
   ...sharedConfig,
   outfile: "dist/index.js",
-  platform: "neutral",
+  platform: "node",
+  format: "esm",
   external: Object.keys({ ...dependencies, ...peerDependencies })
 }).catch((err) => {
   console.error(err);
