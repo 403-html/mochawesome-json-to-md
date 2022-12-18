@@ -1,4 +1,4 @@
-import {generateMarkdown} from "../md-parser";
+import { generateMarkdown } from "../md-parser";
 
 describe("generateMarkdown", () => {
   it("should replace single tag template", () => {

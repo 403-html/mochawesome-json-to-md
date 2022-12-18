@@ -1,5 +1,8 @@
-import {findTestsByTypeInDirectoryTree, extractTestsByType} from "../extractor";
-import type {TestResultsTypes} from "../extractor.d";
+import {
+  findTestsByTypeInDirectoryTree,
+  extractTestsByType,
+} from "../extractor";
+import type { TestResultsTypes } from "../extractor.d";
 import type Mochawesome from "mochawesome";
 
 const baseDir: Mochawesome.PlainSuite = {
@@ -61,7 +64,7 @@ describe("findTestsByTypeInDirectoryTree", () => {
       dir,
     });
 
-    expect(results).toEqual([{path: dir.file, ...baseTest}]);
+    expect(results).toEqual([{ path: dir.file, ...baseTest }]);
   });
 
   it("should return an array of tests when tests are found in nested suites", () => {
@@ -81,7 +84,7 @@ describe("findTestsByTypeInDirectoryTree", () => {
       dir,
     });
 
-    expect(results).toEqual([{path: nestedDir.file, ...baseTest}]);
+    expect(results).toEqual([{ path: nestedDir.file, ...baseTest }]);
   });
 
   it("should return an array of tests when tests are found in nested suites and root", () => {
@@ -104,8 +107,8 @@ describe("findTestsByTypeInDirectoryTree", () => {
     });
 
     expect(results).toEqual([
-      {path: nestedDir.file, ...baseTest},
-      {path: dir.file, ...baseTest},
+      { path: nestedDir.file, ...baseTest },
+      { path: dir.file, ...baseTest },
     ]);
   });
 });
@@ -132,7 +135,7 @@ describe("extractTestsByType", () => {
     const results = extractTestsByType([dir]);
 
     expect(results).toEqual({
-      passes: [{path: dir.file, ...baseTest}],
+      passes: [{ path: dir.file, ...baseTest }],
       failures: [],
       pending: [],
       skipped: [],
@@ -154,7 +157,7 @@ describe("extractTestsByType", () => {
     const results = extractTestsByType([dir]);
 
     expect(results).toEqual({
-      passes: [{path: nestedDir.file, ...baseTest}],
+      passes: [{ path: nestedDir.file, ...baseTest }],
       failures: [],
       pending: [],
       skipped: [],
@@ -179,8 +182,8 @@ describe("extractTestsByType", () => {
 
     expect(results).toEqual({
       passes: [
-        {path: nestedDir.file, ...baseTest},
-        {path: dir.file, ...baseTest},
+        { path: nestedDir.file, ...baseTest },
+        { path: dir.file, ...baseTest },
       ],
       failures: [],
       pending: [],
@@ -207,10 +210,10 @@ describe("extractTestsByType", () => {
 
     expect(results).toEqual({
       passes: [
-        {path: nestedDir.file, ...baseTest},
-        {path: dir.file, ...baseTest},
+        { path: nestedDir.file, ...baseTest },
+        { path: dir.file, ...baseTest },
       ],
-      failures: [{path: dir.file, ...baseTest}],
+      failures: [{ path: dir.file, ...baseTest }],
       pending: [],
       skipped: [],
     });
