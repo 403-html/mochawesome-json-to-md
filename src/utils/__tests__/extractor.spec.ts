@@ -1,5 +1,5 @@
 import {findTestsByTypeInDirectoryTree, extractTestsByType} from "../extractor";
-import type {TestResultsTypes} from "../extractor";
+import type {TestResultsTypes} from "../extractor.d";
 import type Mochawesome from "mochawesome";
 
 const baseDir: Mochawesome.PlainSuite = {

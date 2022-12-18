@@ -1,13 +1,9 @@
 import type Mochawesome from "mochawesome";
-
-export enum TestResultsTypes {
-  passes = "passes",
-  failures = "failures",
-  pending = "pending",
-  skipped = "skipped",
-}
-
-export type TestWithFilePath = Mochawesome.PlainTest & {path: string};
+import type {
+  TestResultsTypes,
+  TestWithFilePath,
+  ExtractedTestsByType,
+} from "./extractor.d";
 
 export const findTestsByTypeInDirectoryTree = ({
   type,
@@ -47,8 +43,10 @@ export const findTestsByTypeInDirectoryTree = ({
   return localCache;
 };
 
-export const extractTestsByType = (results: Mochawesome.PlainSuite[]) => {
-  const testsByType: Record<TestResultsTypes, TestWithFilePath[]> = {
+export const extractTestsByType = (
+  results: Mochawesome.PlainSuite[]
+): ExtractedTestsByType => {
+  const testsByType: ExtractedTestsByType = {
     passes: [],
     failures: [],
     pending: [],
