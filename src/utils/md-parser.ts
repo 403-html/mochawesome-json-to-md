@@ -1,12 +1,7 @@
-export const generateMarkdown = (
-  obj: object,
-  template: string,
-  blockRegex?: RegExp,
-  singleRegex?: RegExp
-): string => {
+export const generateMarkdown = (obj: object, template: string): string => {
   // Cache the regular expressions if they were not provided
-  const blockRegexCache = blockRegex || /\{\{(.*?)\}\}([\s\S]*?)\{\{\/\1\}\}/g;
-  const singleRegexCache = singleRegex || /\{\{(.*?)\}\}/g;
+  const blockRegex = /\{\{(.*?)\}\}([\s\S]*?)\{\{\/\1\}\}/g;
+  const singleRegex = /\{\{(.*?)\}\}/g;
 
   // Extract the logic for replacing block tags and single tags into separate functions
   const replaceBlockTags = (
@@ -17,21 +12,11 @@ export const generateMarkdown = (
     if (obj.hasOwnProperty(key) && Array.isArray(obj[key])) {
       return obj[key]
         .map((item) => {
-          return generateMarkdown(
-            item,
-            nestedTemplate.trim(),
-            blockRegexCache,
-            singleRegexCache
-          );
+          return generateMarkdown(item, nestedTemplate.trim());
         })
         .join("\n");
     } else if (obj.hasOwnProperty(key) && typeof obj[key] === "object") {
-      return generateMarkdown(
-        obj[key],
-        nestedTemplate.trim(),
-        blockRegexCache,
-        singleRegexCache
-      );
+      return generateMarkdown(obj[key], nestedTemplate.trim());
     }
   };
   const replaceSingleTags = (_match: string, key: string) => {
@@ -53,10 +38,10 @@ export const generateMarkdown = (
   }
 
   // Replace block tags
-  template = template.replace(blockRegexCache, replaceBlockTags);
+  template = template.replace(blockRegex, replaceBlockTags);
 
   // Replace single tags
-  template = template.replace(singleRegexCache, replaceSingleTags);
+  template = template.replace(singleRegex, replaceSingleTags);
 
   return template;
 };
