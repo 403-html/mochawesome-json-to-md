@@ -9,21 +9,28 @@ export const generateMarkdown = (obj: object, template: string): string => {
     key: string,
     nestedTemplate: string
   ) => {
-    if (obj.hasOwnProperty(key) && Array.isArray(obj[key])) {
+    const hasKey = Object.prototype.hasOwnProperty.call(obj, key);
+    const isValueArray = Array.isArray(obj[key]);
+    const isValueObject = typeof obj[key] === "object";
+
+    if (hasKey && isValueArray) {
       return obj[key]
         .map((item) => {
           return generateMarkdown(item, nestedTemplate.trim());
         })
         .join("\n");
-    } else if (obj.hasOwnProperty(key) && typeof obj[key] === "object") {
+    } else if (hasKey && isValueObject) {
       return generateMarkdown(obj[key], nestedTemplate.trim());
     }
   };
   const replaceSingleTags = (_match: string, key: string) => {
-    if (
-      obj.hasOwnProperty(key) &&
-      !(typeof obj[key] === "object" || Array.isArray(obj[key]))
-    ) {
+    const hasKey = Object.prototype.hasOwnProperty.call(obj, key);
+    const isValueObjectOrArray =
+      typeof obj[key] === "object" || Array.isArray(obj[key]);
+
+    const shouldReplace = hasKey && !isValueObjectOrArray;
+
+    if (shouldReplace) {
       return obj[key];
     }
   };
@@ -33,7 +40,9 @@ export const generateMarkdown = (obj: object, template: string): string => {
     typeof obj === "object" && Object.keys(obj).length === 0;
   const isTemplateEmpty = template === "";
 
-  if (isArrayAndEmpty || isObjAndEmpty || isTemplateEmpty) {
+  const isEmpty = isArrayAndEmpty || isObjAndEmpty || isTemplateEmpty;
+
+  if (isEmpty) {
     return template;
   }
 
