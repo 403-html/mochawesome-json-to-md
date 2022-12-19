@@ -3,7 +3,7 @@ import type {
   TestResultsTypes,
   TestWithFilePath,
   ExtractedTestsByType,
-} from "./extractor.d";
+} from "./utils.d";
 
 export const findTestsByTypeInDirectoryTree = ({
   type,
