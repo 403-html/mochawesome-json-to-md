@@ -1,295 +1,141 @@
 #!/usr/bin/env node
 const fs = require("fs");
-const yargs = require("yargs/yargs");
-const { hideBin } = require("yargs/helpers");
+const { program } = require("commander");
+const mustache = require("mustache");
+const pathPkg = require("path");
 
-const argv = yargs(hideBin(process.argv))
-  .option("path", {
-    alias: "p",
-    description: "define path to the report",
-    type: "string",
-  })
-  .option("output", {
-    alias: "o",
-    description: "define path for the md file",
-    type: "string",
-    default: "./md-reports/output.md",
-  })
-  .option("showEmoji", {
-    description:
-      "defines whether there should be emoji in the final markdown file",
-    type: "boolean",
-    default: true,
-  })
-  .option("reportTitle", {
-    description: "define report title in the final md file",
-    type: "string",
-    default: "Test report",
-  })
-  .option("showDate", {
-    description:
-      "defines whether there should be visible test date in the final markdown file",
-    type: "boolean",
-    default: true,
-  })
-  .option("showDuration", {
-    description:
-      "defines whether there should be visible duration of the test in the final markdown file",
-    type: "boolean",
-    default: true,
-  })
-  .option("showStats", {
-    description:
-      "defines whether there should be visible high level stats of the test in the final markdown file",
-    type: "boolean",
-    default: true,
-  })
-  .option("showPassed", {
-    description:
-      "defines whether there should be visible section with passed tests in the final markdown file",
-    type: "boolean",
-    default: false,
-  })
-  .option("showFailed", {
-    description:
-      "defines whether there should be visible section with failed tests in the final markdown file",
-    type: "boolean",
-    default: true,
-  })
-  .option("showSkipped", {
-    description:
-      "defines whether there should be visible section with skipped by user tests in the final markdown file",
-    type: "boolean",
-    default: true,
-  })
-  .option("showCypress", {
-    description:
-      "defines whether there should be visible section with skipped by Cypress tests in the final markdown file",
-    type: "boolean",
-    default: true,
-  })
-  .scriptName("mochawesome-json-to-md")
-  .usage("$0 -p file/path.json -o file/path.md [args]")
-  .epilogue(
-    "for more information, visit https://github.com/htd-tstepien/mochawesome-json-to-md"
-  )
-  .help().argv;
-
-// Create md string based on all informations
-const mdTemplate = ({
-  reportTitle,
-  startDate,
-  showDate,
-  duration,
-  showDuration,
-  showStats,
-  totalTests,
-  otherTests,
-  passedTests = [],
-  showPassed,
-  failedTests = [],
-  showFailed,
-  skippedTests = [],
-  showSkipped,
-  skippedCypress = [],
-  showCypress,
-  showEmoji,
-}) => {
-  const genDate = showDate
-    ? `> Run start date: ${new Date(startDate).toLocaleString()} \n`
-    : "";
-  const genDuration = showDuration
-    ? `> Duration: ${Math.round(duration / 1000)}s \n`
-    : "";
-
-  const genStats = showStats
-    ? `## Tests run stats
-  - ${showEmoji ? "📚 " : ""}total tests: ${totalTests}
-  - ${showEmoji ? "✔️ " : ""}passed: ${passedTests.length}
-  - ${showEmoji ? "❌ " : ""}failed: ${failedTests.length}
-  - ${showEmoji ? "🔜 " : ""}skipped: ${skippedTests.length}
-  - ${showEmoji ? "⚠️ " : ""}skipped by Cypress: ${skippedCypress.length}
-  - ${showEmoji ? "❇️ " : ""}other: ${otherTests} \n`
-    : "";
-
-  const genList = (emoji, list) => {
-    let cacheList = [];
-
-    for (let iterator = 0; iterator < list.length; iterator++) {
-      const { path, title } = list[iterator];
-      cacheList.push(
-        `- ${showEmoji ? `${emoji}` : ""} Path: ${path}, test: ${title}`
-      );
-    }
-
-    return cacheList.join("\n");
-  };
-
-  const genSection = ({ title, emoji, collection, check }) => {
-    if (check) {
-      return `## ${title}
-  <details>
-  <summary>Click to reveal</summary>
-  <article>
-  
-${genList(emoji, collection)}
-  </article>
-  </details>\n`;
-    } else {
-      return "";
-    }
-  };
-
-  return `# ${reportTitle}
-${genDate}
-${genDuration}
-${genStats}
-${genSection({
-  title: "Passed tests",
-  emoji: "✔️",
-  collection: passedTests,
-  check: showPassed,
-})}
-${genSection({
-  title: "Failed tests",
-  emoji: "💢",
-  collection: failedTests,
-  check: showFailed,
-})}
-${genSection({
-  title: "Skipped tests",
-  emoji: "🔜",
-  collection: skippedTests,
-  check: showSkipped,
-})}
-${genSection({
-  title: "Skipped tests by Cypress",
-  emoji: "⚠️",
-  collection: skippedCypress,
-  check: showCypress,
-})}
-`;
-};
-
-// Read json file and save it as obj
-const getJsonFileObj = (path) => {
-  if (typeof path !== "string") {
+/**
+ * Reads the JSON file and returns its content as an object.
+ * @param {string} filePath - Path to the JSON file.
+ * @returns {object} - Parsed JSON object.
+ * @throws Will throw an error if there's an issue parsing the JSON file.
+ */
+const readJsonFile = (filePath) => {
+  if (typeof filePath !== "string") {
     throw new Error(
-      `Provide string path for JSON file, actually you pass: ${typeof path}`
+      `Provide string path for JSON file, actually you pass: ${typeof filePath}`
     );
   }
 
   let jsonObj;
   try {
-    jsonObj = JSON.parse(fs.readFileSync(path));
+    jsonObj = JSON.parse(fs.readFileSync(filePath));
   } catch (err) {
     throw new Error(`Error while parsing JSON file: ${err}`);
   }
   return jsonObj;
 };
 
-// Reccurency return of all tests with given type
-const grabAllTestsByType = ({ type, dir, path = dir.file, cache = [] }) => {
-  let localCache = cache;
-  if (dir[type].length > 0) {
-    for (const uuid of dir[type]) {
-      const foundTestByUuid = dir.tests.find((test) => test.uuid === uuid);
-      localCache.push({ path, ...foundTestByUuid });
-    }
-  }
-  if (dir.suites.length > 0) {
-    for (const suit of dir.suites) {
-      grabAllTestsByType({
-        type: type,
-        dir: suit,
-        path,
-        cache: localCache,
-      });
-    }
-  }
-  return localCache;
-};
+/**
+ * Extracts all necessary information from the parsed JSON object.
+ * @param {object} param0 - Object containing the 'results' and 'stats' properties.
+ * @param {Array} param0.results - List of results.
+ * @param {object} param0.stats - Statistics object containing information about the test run (e.g. start date, duration, number of tests, etc.).
+ * @returns {object} - Extracted information.
+ */
+const extractTestResultsInfo = ({ results, stats }) => {
+  const { start: startDate, duration, tests: totalTests, other: otherTests } =
+    stats;
 
-// Return list of all tests from collection by types
-const getIt = (results) => {
-  const types = ["passes", "failures", "pending", "skipped"];
-  let cache = [];
+  const testTypes = ["passes", "failures", "pending", "skipped"];
 
-  types.forEach((type) => {
-    let typeCache = [];
-
-    results.forEach((result) => {
-      typeCache.push(
-        ...grabAllTestsByType({
-          type: type,
-          dir: result,
-        })
-      );
-    });
-
-    cache.push(typeCache);
+  const categorizedTests = testTypes.map((type) => {
+    return results.flatMap((result) =>
+      collectTestsByType({
+        type,
+        suite: result,
+        path: result.file,
+      })
+    );
   });
-
-  return cache;
-};
-
-// Get all needed info from parsed json object
-const extractAllInfo = ({ results, stats }) => {
-  const startDate = stats.start;
-  const duration = stats.duration;
-  const totalTests = stats.tests;
-  const otherTests = stats.other;
-  const [passedTests, failedTests, skippedTests, skippedCypress] =
-    getIt(results);
 
   return {
     startDate,
     duration,
+    passedTestsCount: categorizedTests[0].length,
+    failedTestsCount: categorizedTests[1].length,
+    skippedTestsCount: categorizedTests[2].length,
+    skippedCypressTestsCount: categorizedTests[3].length,
+    otherTestsCount: otherTests,
     totalTests,
-    otherTests,
-    passedTests,
-    failedTests,
-    skippedTests,
-    skippedCypress,
+    passedExists: categorizedTests[0].length > 0,
+    failedExists: categorizedTests[1].length > 0,
+    skippedExists: categorizedTests[2].length > 0,
+    skippedCypressExists: categorizedTests[3].length > 0,
+    passedTests: categorizedTests[0],
+    failedTests: categorizedTests[1],
+    skippedTests: categorizedTests[2],
+    skippedCypress: categorizedTests[3],
   };
 };
 
-// main function to call converting and processing md file
-const mocha_convert = () => {
-  const {
-    path,
-    output,
-    showEmoji,
-    reportTitle,
-    showDate,
-    showDuration,
-    showStats,
-    showPassed,
-    showFailed,
-    showSkipped,
-    showCypress,
-  } = argv;
+/**
+ * Recursively collects all tests with a given type.
+ * @param {object} param0 - Object containing 'type', 'suite', 'path', and 'cache' properties.
+ * @param {string} param0.type - Type of the test.
+ * @param {object} param0.suite - Suite object.
+ * @param {string} param0.path - Path to the test file.
+ * @param {Array} param0.cache - Cache array.
+ * @returns {Array} - List of tests with the given type.
+ */
+const collectTestsByType = ({ type, suite, path, cache = [] }) => {
+  const localCache = cache;
+  const { [type]: typeList, suites, tests } = suite;
 
-  const outputObj = getJsonFileObj(path);
-  const convertedReport = extractAllInfo(outputObj);
-  const generatedMd = mdTemplate({
-    ...convertedReport,
-    showEmoji,
-    reportTitle,
-    showDate,
-    showDuration,
-    showStats,
-    showPassed,
-    showFailed,
-    showSkipped,
-    showCypress,
-  });
-
-  fs.writeFile(output, generatedMd, (err) => {
-    if (err) {
-      throw new Error(err);
+  if (typeList.length > 0) {
+    for (const uuid of typeList) {
+      const foundTestByUuid = tests.find((test) => test.uuid === uuid);
+      if (!foundTestByUuid) {
+        throw new Error(`Test with uuid ${uuid} not found`);
+      }
+      foundTestByUuid.path = path;
+      localCache.push({ path, ...foundTestByUuid });
     }
-  });
+  }
+
+  if (suites.length > 0) {
+    for (const subSuite of suites) {
+      collectTestsByType({
+        type,
+        suite: subSuite,
+        path: subSuite.file || path,
+        cache: localCache,
+      });
+    }
+  }
+
+  return localCache;
 };
 
-mocha_convert();
+const convertMochaToMarkdown = () => {
+  const { path, output, template, title } = program.opts();
+  const testResults = readJsonFile(path);
+  const extractedInfo = extractTestResultsInfo(testResults);
+
+  // Read the template file
+  const templateContent = fs.readFileSync(template, "utf-8");
+
+  // Render the template with the extracted information
+  const renderedMarkdown = mustache.render(templateContent, {...extractedInfo, title});
+
+  // Ensure the directory structure exists for the output file
+  const outputPath = pathPkg.dirname(output);
+  fs.mkdirSync(outputPath, { recursive: true });
+
+  // Write the generated markdown to the specified output file
+  fs.writeFileSync(output, renderedMarkdown);
+};
+
+program
+  .option("-p, --path <path>", "define path to the report")
+  .option("-o, --output <output>", "define path for the md file", "./md-reports/output.md")
+  .option("-t, --template <template>", "define path to the template file", "./sample-template.md")
+  .option("-T, --title <title>", "define title for the report", "Test Report")
+  .usage("$0 -p file/path.json [options]")
+  .addHelpText(
+    "after",
+    "\nfor more information, visit https://github.com/403-html/mochawesome-json-to-md"
+  )
+  .parse(process.argv);
+
+convertMochaToMarkdown();

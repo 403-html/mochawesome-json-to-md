@@ -1,0 +1,124 @@
+{
+  "stats": {
+    "suites": 1,
+    "tests": 2,
+    "passes": 1,
+    "pending": 0,
+    "failures": 1,
+    "start": "2021-05-24T00:57:43.809Z",
+    "end": "2021-05-24T00:57:43.840Z",
+    "duration": 31,
+    "testsRegistered": 2,
+    "passPercent": 50,
+    "pendingPercent": 0,
+    "other": 0,
+    "hasOther": false,
+    "skipped": 0,
+    "hasSkipped": false
+  },
+  "results": [
+    {
+      "uuid": "49dac235-26c3-4787-aa2a-3bb9f4b95c99",
+      "title": "",
+      "fullFile": "",
+      "file": "",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "2ee44ad6-1759-4923-b1c1-8a621be13ef8",
+          "title": "Mocha Works?",
+          "fullFile": "C:\\Users\\RishabhPrabhu\\Documents\\mocha-selenium-sample-master\\mocha-selenium-sample-master\\specs\\search_basic.js",
+          "file": "\\specs\\search_basic.js",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "Mocha Run test",
+              "fullTitle": "Mocha Works? Mocha Run test",
+              "timedOut": false,
+              "duration": 1,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "assert.ok(true, 'Failed test')",
+              "err": {},
+              "uuid": "6a817446-6b84-46ea-aa32-43f100fce9b2",
+              "parentUUID": "2ee44ad6-1759-4923-b1c1-8a621be13ef8",
+              "isHook": false,
+              "skipped": false
+            },
+            {
+              "title": "Should return -1 if value not present",
+              "fullTitle": "Mocha Works? Should return -1 if value not present",
+              "timedOut": false,
+              "duration": 3,
+              "state": "failed",
+              "speed": null,
+              "pass": false,
+              "fail": true,
+              "pending": false,
+              "context": null,
+              "code": "assert.strictEqual([1,2,3].indexOf(5), 'Failed to find')",
+              "err": {
+                "message": "AssertionError: Expected values to be strictly equal:\n+ actual - expected\n\n+ -1\n- 'Failed to find'",
+                "estack": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ -1\n- 'Failed to find'\n    at Context.<anonymous> (specs\\search_basic.js:7:16)\n    at processImmediate (internal/timers.js:462:21)",
+                "diff": null
+              },
+              "uuid": "fbc9b77c-2b64-4d25-9f32-2c3b29e957c5",
+              "parentUUID": "2ee44ad6-1759-4923-b1c1-8a621be13ef8",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "6a817446-6b84-46ea-aa32-43f100fce9b2"
+          ],
+          "failures": [
+            "fbc9b77c-2b64-4d25-9f32-2c3b29e957c5"
+          ],
+          "pending": [],
+          "skipped": [],
+          "duration": 4,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    }
+  ],
+  "meta": {
+    "mocha": {
+      "version": "6.2.3"
+    },
+    "mochawesome": {
+      "options": {
+        "quiet": false,
+        "reportFilename": "mochawesome",
+        "saveHtml": true,
+        "saveJson": true,
+        "consoleReporter": "spec",
+        "useInlineDiffs": false,
+        "code": true
+      },
+      "version": "6.2.2"
+    },
+    "marge": {
+      "options": null,
+      "version": "5.2.0"
+    }
+  }
+}
