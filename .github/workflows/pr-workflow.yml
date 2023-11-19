@@ -1,13 +1,14 @@
-name: PR Semver
+name: PR workflow
+
 on:
   pull_request:
-    types: [labeled]
-    branches:
-      - main
+    types:
+      - opened
+      - synchronize
 
 jobs:
-  update-version:
-    if: ${{ github.event.label.name == 'semver' }}
+  semver-check:
+    if: github.event.action == 'opened'
     runs-on: ubuntu-latest
     steps:
       - name: Reattach HEAD
@@ -29,8 +30,8 @@ jobs:
         run: |
           echo "Checking branch prefix..."
           echo "branch prefix: ${{ steps.branch-prefix.outputs.prefix }}"
-          if [[ ${{ steps.branch-prefix.outputs.prefix }} != "major" && ${{ steps.branch-prefix.outputs.prefix }} != "minor" && ${{ steps.branch-prefix.outputs.prefix }} != "patch" ]]; then
-            echo "Branch prefix is not valid, exiting..."
+          if [[ ${{ steps.branch-prefix.outputs.prefix }} != "major" && ${{ steps.branch-prefix.outputs.prefix }} != "minor" && ${{ steps.branch-prefix.outputs.prefix }} != "patch" && ${{ steps.branch-prefix.outputs.prefix }} != "dependabot" ]]; then
+            echo "Branch prefix is not valid, exiting... allowed prefixes are major, minor, patch, dependabot"
             exit 1
           fi
           echo "Branch prefix is valid"
@@ -44,7 +45,7 @@ jobs:
           elif [ "${{ steps.branch-prefix.outputs.prefix }}" == "minor" ]; then
             echo "Bumping minor version..."
             npm --no-git-tag-version version minor
-          elif [ "${{ steps.branch-prefix.outputs.prefix }}" == "patch" ]; then
+          elif [ "${{ steps.branch-prefix.outputs.prefix }}" == "patch" ] || [ "${{ steps.branch-prefix.outputs.prefix }}" == "dependabot" ]; then
             echo "Bumping patch version..."
             npm --no-git-tag-version version patch
           else
@@ -64,3 +65,18 @@ jobs:
           git add .
           git commit -am "chore(release): Bump ${{ steps.branch-prefix.outputs.prefix }} version"
           git push origin HEAD
+
+  check-naming:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Check PR name
+      run: |
+        pr_name=$(jq -r .pull_request.title $GITHUB_EVENT_PATH)
+        if [[ ! $pr_name =~ ^(feat|fix|chore|docs|misc)(\([a-zA-Z]+\))?!?:\ .*$ ]]; then
+          echo "error: Pull request title must start with feat/fix/chore/docs/misc, followed by optional ! for breaking changes, followed by an optional scope in parentheses, followed by a colon, followed by a space, followed by a description."
+          exit 1
+        fi
