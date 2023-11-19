@@ -1,0 +1,14 @@
+pre-push:
+  commands:
+    check-branch-name:
+      run: |
+        branch_name=$(git symbolic-ref --short HEAD)
+        if [[ ! $branch_name =~ ^(major/|minor/|patch/) ]]; then
+          echo "error: Branch name must start with major/, minor/, or patch/"
+          exit 1
+        fi
+
+pre-commit:
+  commands:
+    linter:
+      run: npm run eslint
