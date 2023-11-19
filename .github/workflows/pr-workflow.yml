@@ -76,7 +76,7 @@ jobs:
     - name: Check PR name
       run: |
         pr_name=$(jq -r .pull_request.title $GITHUB_EVENT_PATH)
-        if [[ ! $pr_name =~ ^(feat|fix|chore|docs|misc)(\([^)]+\))?(!)?: ]]; then
+        if [[ ! $pr_name =~ ^(feat|fix|chore|docs|misc)(\([a-zA-Z]+\))?!?:\ .*$ ]]; then
           echo "error: Pull request title must start with feat/fix/chore/docs/misc and may have an optional '!' between the word and ':' for breaking changes"
           exit 1
         fi
