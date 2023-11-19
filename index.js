@@ -3,6 +3,39 @@ const fs = require("fs");
 const { program } = require("commander");
 const mustache = require("mustache");
 const pathPkg = require("path");
+const winston = require("winston");
+
+program
+  .option("-p, --path <path>", "Specify the path to the report")
+  .option("-o, --output <output>", "Specify the path for the markdown file", "./md-reports/output.md")
+  .option("-t, --template <template>", "Specify the path to the template file", "./sample-template.md")
+  .option("-T, --title <title>", "Specify the title for the report", "Test Report")
+  .option("-v, --verbose", "Enable verbose mode for debug logging")
+  .usage("$0 -p file/path.json [options]")
+  .addHelpText(
+    "after",
+    "\nFor more information, visit https://github.com/403-html/mochawesome-json-to-md"
+  )
+  .parse(process.argv);
+
+const createLogger = (verbose) => {
+  const level = verbose ? 'debug' : 'info';
+  return winston.createLogger({
+    level,
+    format: winston.format.combine(
+      winston.format.timestamp(),
+      winston.format.colorize(),
+      winston.format.printf(({ timestamp, level, message }) => {
+        return `${timestamp} | ${level} | ${message}`;
+      }),
+    ),
+    transports: [
+      new winston.transports.Console({ level, handleExceptions: true }),
+    ],
+  });
+};
+
+const logger = createLogger(program.opts().verbose);
 
 /**
  * Reads the JSON file and returns its content as an object.
@@ -11,16 +44,19 @@ const pathPkg = require("path");
  * @throws Will throw an error if there's an issue parsing the JSON file.
  */
 const readJsonFile = (filePath) => {
+  logger.debug(`Reading JSON file: ${filePath}`);
   if (typeof filePath !== "string") {
-    throw new Error(
-      `Provide string path for JSON file, actually you pass: ${typeof filePath}`
-    );
+    logger.error(`Invalid file path provided: ${filePath}`);
+    throw new Error(`Invalid file path provided: ${filePath}`);
   }
 
   let jsonObj;
   try {
+    logger.debug(`Parsing JSON file: ${filePath}`);
     jsonObj = JSON.parse(fs.readFileSync(filePath));
+    logger.debug(`Successfully parsed JSON file: ${filePath}`);
   } catch (err) {
+    logger.error(`Error while parsing JSON file: ${err}`);
     throw new Error(`Error while parsing JSON file: ${err}`);
   }
   return jsonObj;
@@ -34,21 +70,22 @@ const readJsonFile = (filePath) => {
  * @returns {object} - Extracted information.
  */
 const extractTestResultsInfo = ({ results, stats }) => {
-  const { start: startDate, duration, tests: totalTests, other: otherTests } =
-    stats;
+  logger.debug('Extracting test results information');
+  const { start: startDate, duration, tests: totalTests, other: otherTests } = stats;
 
   const testTypes = ["passes", "failures", "pending", "skipped"];
 
-  const categorizedTests = testTypes.map((type) => {
-    return results.flatMap((result) =>
+  const categorizedTests = testTypes.map((type) =>
+    results.flatMap((result) =>
       collectTestsByType({
         type,
         suite: result,
         path: result.file,
       })
-    );
-  });
+    )
+  );
 
+  logger.debug('Finished extracting test results information');
   return {
     startDate,
     duration,
@@ -79,6 +116,7 @@ const extractTestResultsInfo = ({ results, stats }) => {
  * @returns {Array} - List of tests with the given type.
  */
 const collectTestsByType = ({ type, suite, path, cache = [] }) => {
+  logger.debug(`Collecting tests of type ${type}`);
   const localCache = cache;
   const { [type]: typeList, suites, tests } = suite;
 
@@ -86,8 +124,10 @@ const collectTestsByType = ({ type, suite, path, cache = [] }) => {
     for (const uuid of typeList) {
       const foundTestByUuid = tests.find((test) => test.uuid === uuid);
       if (!foundTestByUuid) {
+        logger.error(`Test with uuid ${uuid} not found`);
         throw new Error(`Test with uuid ${uuid} not found`);
       }
+      logger.debug(`Found test with uuid ${uuid}`);
       foundTestByUuid.path = path;
       localCache.push({ path, ...foundTestByUuid });
     }
@@ -108,34 +148,27 @@ const collectTestsByType = ({ type, suite, path, cache = [] }) => {
 };
 
 const convertMochaToMarkdown = () => {
+  logger.info('Starting Mocha to Markdown conversion');
   const { path, output, template, title } = program.opts();
+
+  logger.info(`Reading test results from: ${path}`);
   const testResults = readJsonFile(path);
+
+  logger.info('Extracting test results information');
   const extractedInfo = extractTestResultsInfo(testResults);
 
-  // Read the template file
+  logger.info(`Reading template file: ${template}`);
   const templateContent = fs.readFileSync(template, "utf-8");
 
-  // Render the template with the extracted information
+  logger.info('Rendering template with test results');
   const renderedMarkdown = mustache.render(templateContent, {...extractedInfo, title});
 
-  // Ensure the directory structure exists for the output file
+  logger.info(`Creating directory structure: ${outputPath}`);
   const outputPath = pathPkg.dirname(output);
   fs.mkdirSync(outputPath, { recursive: true });
 
-  // Write the generated markdown to the specified output file
+  logger.info(`Writing markdown to: ${output}`);
   fs.writeFileSync(output, renderedMarkdown);
 };
-
-program
-  .option("-p, --path <path>", "define path to the report")
-  .option("-o, --output <output>", "define path for the md file", "./md-reports/output.md")
-  .option("-t, --template <template>", "define path to the template file", "./sample-template.md")
-  .option("-T, --title <title>", "define title for the report", "Test Report")
-  .usage("$0 -p file/path.json [options]")
-  .addHelpText(
-    "after",
-    "\nfor more information, visit https://github.com/403-html/mochawesome-json-to-md"
-  )
-  .parse(process.argv);
 
 convertMochaToMarkdown();

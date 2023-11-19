@@ -63,6 +63,7 @@ that's it! You've successfuly converted json report to _slick_ md report.
 | `--output` | `-o` | Path to the output markdown file | No | ./md-reports/output.md |
 | `--template` | `-t` | Path to the markdown template file | No | ./sample-template.md |
 | `--title` | `-T` | Title for the report | No | Test Report |
+| `--verbose` | `-v` | Verbose mode | No | false |
 
 ## Templating, tags and customization
 
