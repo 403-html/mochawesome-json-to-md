@@ -1,13 +1,14 @@
-name: PR Semver
+name: PR workflow
+
 on:
   pull_request:
-    types: [labeled]
-    branches:
-      - main
+    types:
+      - opened
+      - synchronize
 
 jobs:
-  update-version:
-    if: ${{ github.event.label.name == 'semver' }}
+  semver-check:
+    if: github.event.action == 'opened'
     runs-on: ubuntu-latest
     steps:
       - name: Reattach HEAD
@@ -64,3 +65,18 @@ jobs:
           git add .
           git commit -am "chore(release): Bump ${{ steps.branch-prefix.outputs.prefix }} version"
           git push origin HEAD
+
+  check-naming:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Check PR name
+      run: |
+        pr_name=$(jq -r .pull_request.title $GITHUB_EVENT_PATH)
+        if [[ ! $pr_name =~ ^(feat|fix|chore|docs|misc)[!]?: ]]; then
+          echo "error: Pull request title must start with feat/fix/chore/docs/misc and may have an optional '!' between the word and ':' for breaking changes"
+          exit 1
+        fi
