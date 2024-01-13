@@ -163,8 +163,8 @@ const convertMochaToMarkdown = () => {
   logger.info('Rendering template with test results');
   const renderedMarkdown = mustache.render(templateContent, {...extractedInfo, title});
 
-  logger.info(`Creating directory structure: ${outputPath}`);
   const outputPath = pathPkg.dirname(output);
+  logger.info(`Creating directory structure: ${outputPath}`);
   fs.mkdirSync(outputPath, { recursive: true });
 
   logger.info(`Writing markdown to: ${output}`);
