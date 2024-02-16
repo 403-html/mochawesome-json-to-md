@@ -102,6 +102,9 @@ jobs:
     needs:
       - semver-check
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        
       - name: Create release
         uses: softprops/action-gh-release@v1
         with:
@@ -119,6 +122,9 @@ jobs:
     needs:
       - gh-release
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
       - name: Set up Node.js
         uses: actions/setup-node@v2
         with:
