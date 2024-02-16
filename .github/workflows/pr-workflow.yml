@@ -15,10 +15,18 @@ jobs:
     outputs:
       version: ${{ steps.get-version.outputs.version }}
     steps:
-      - name: Reattach HEAD
+      - name: Checkout code for PR
+        if: github.event_name == 'pull_request'
         uses: actions/checkout@v2
         with:
           ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Checkout code for release push
+        if: github.event_name == 'push'
+        uses: actions/checkout@v2
+        with:
+          ref: main
           fetch-depth: 0
 
       - name: Merge main branch to PR branch
@@ -129,6 +137,7 @@ jobs:
         uses: actions/setup-node@v2
         with:
           node-version: '18'
+          registry-url: 'https://registry.npmjs.org'
 
       - name: Install dependencies
         run: npm install
