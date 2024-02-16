@@ -5,11 +5,16 @@ on:
     types:
       - opened
       - synchronize
+  push:
+    branches:
+      - main
 
 jobs:
   semver-check:
     if: github.event.action == 'opened'
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get-version.outputs.version }}
     steps:
       - name: Reattach HEAD
         uses: actions/checkout@v2
@@ -52,6 +57,10 @@ jobs:
             echo "Error: working branch prefix not found"
             exit 1
           fi
+      
+      - name: Get version number
+        id: get-version
+        run: echo "::set-output name=version::$(git describe --tags --abbrev=0)"
 
       - name: Setup git
         run: |
@@ -80,3 +89,40 @@ jobs:
           echo "error: Pull request title must start with feat/fix/chore/docs/misc, followed by optional ! for breaking changes, followed by an optional scope in parentheses, followed by a colon, followed by a space, followed by a description."
           exit 1
         fi
+  
+  gh-release:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    needs:
+      - semver-check
+    steps:
+      - name: Create release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: "New release ${{ needs.semver-check.outputs.version }}"
+          tag_name: ${{ needs.semver-check.outputs.version }}
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish-npm:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    needs:
+      - semver-check
+      - gh-release
+    steps:
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Publish to NPM
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
