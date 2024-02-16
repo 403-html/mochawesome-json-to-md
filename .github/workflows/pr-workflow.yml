@@ -15,11 +15,8 @@ jobs:
     outputs:
       version: ${{ steps.get-version.outputs.version }}
     steps:
-      - name: Reattach HEAD
+      - name: Checkout code
         uses: actions/checkout@v2
-        with:
-          ref: ${{ github.event.pull_request.head.ref }}
-          fetch-depth: 0
 
       - name: Merge main branch to PR branch
         if: github.event_name == 'pull_request'
@@ -104,7 +101,7 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-        
+
       - name: Create release
         uses: softprops/action-gh-release@v1
         with:
