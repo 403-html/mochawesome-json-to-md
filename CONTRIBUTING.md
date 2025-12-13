@@ -8,14 +8,14 @@ We use GitHub's issue tracker to track issues and ideas for the project. If you 
 
 ## Versioning
 
-> 🚨 **Do not change the version number manually**; we have workflows in place to automatically update the version number based on the type of the change (based on branch name, *see below*).
+> 🚨 **Do not change the version number manually**; we have workflows in place to automatically update the version number based on the type of the change (based on branch name, _see below_).
 
-We use semantic versioning for this project. You can find more information about it [here](https://semver.org/spec/v2.0.0.html). To determine the version number of your changes, use the following guidelines:
+We use semantic versioning for this project. You can find more information about it at the [Semantic Versioning 2.0.0 specification](https://semver.org/spec/v2.0.0.html). To determine the version number of your changes, use the following guidelines:
 
 - `major change`: adding functionality or refactoring that **MAY** break all functionality unless appropriate changes are made to the project that uses the package. It'll update version by `1.x.x`.
 - `minor change`: adding functionality or refactoring that changes some functionality but does not affect the basic functionality. It'll update version by `x.1.0`.
 - `patch change`: fixing a bug that does not affect the basic functionality. It'll update version by `x.x.1`.
-- `dependabot change`: *special automatic update*; updating dependencies by GitHub's dependabot. It'll update version by `x.x.1`.
+- `dependabot change`: _special automatic update_; updating dependencies by GitHub's dependabot. It'll update version by `x.x.1`.
 
 ## Branching out
 

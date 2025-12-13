@@ -6,18 +6,14 @@
 ## Tests run stats
 
 - 📚 total tests: {{totalTests}}
-
 - ✔️ passed: {{passedTestsCount}}
-
 - ❌ failed: {{failedTestsCount}}
-
 - 🔜 skipped: {{skippedTestsCount}}
-
-- ⚠️ skipped by Cypress: {{skippedCypressTestsCount}}
-
+- ⚠️ other skipped tests: {{skippedOtherTestsCount}}
 - ❇️ other: {{otherTestsCount}}
 
 {{#passedExists}}
+
 ## Passed tests
 
 <details>
@@ -31,6 +27,7 @@
 {{/passedExists}}
 
 {{#failedExists}}
+
 ## Failed tests
 
 <details>
@@ -43,11 +40,13 @@
 ```
 
 {{/failedTests}}
+
 </article>
 </details>
 {{/failedExists}}
 
 {{#skippedExists}}
+
 ## Skipped tests
 
 <details>
@@ -58,13 +57,14 @@
 </details>
 {{/skippedExists}}
 
-{{#skippedCypressExists}}
-## Skipped tests by Cypress
+{{#skippedOtherExists}}
+
+## Other skipped tests
 
 <details>
 <summary>Click to reveal</summary>
 <article>
-  {{#skippedCypress}}⚠️ - Path: {{path}}, test: {{title}}{{/skippedCypress}}
+  {{#skippedOtherTests}}⚠️ - Path: {{path}}, test: {{title}}{{/skippedOtherTests}}
 </article>
 </details>
-{{/skippedCypressExists}}
+{{/skippedOtherExists}}

@@ -12,3 +12,5 @@ pre-commit:
   commands:
     linter:
       run: npm run eslint
+    markdownlint:
+      run: npm run lint:md
