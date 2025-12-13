@@ -143,62 +143,64 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     outputs:
-      is_release: ${{ steps.check-release.outputs.is_release }}
-      version: ${{ steps.check-release.outputs.version }}
+      is_release: ${{ steps.check.outputs.is_release }}
+      version: ${{ steps.check.outputs.version }}
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 0
 
-      - name: Detect version change
-        id: check-release
+      - id: check
+        shell: bash
         run: |
-          prev_version=$(git show HEAD^:package.json | jq -r '.version' || echo "none")
-          curr_version=$(jq -r '.version' package.json)
-          echo "prev_version=$prev_version"
+          set -euo pipefail
+
+          curr_version="$(jq -r '.version' package.json)"
           echo "curr_version=$curr_version"
+
+          prev_json="$(git show HEAD~1:package.json 2>/dev/null || true)"
+          if [[ -n "$prev_json" ]]; then
+            prev_version="$(echo "$prev_json" | jq -r '.version')"
+          else
+            prev_version="none"
+          fi
+
+          echo "prev_version=$prev_version"
+
           if [[ "$prev_version" != "$curr_version" ]]; then
             echo "is_release=true" >> "$GITHUB_OUTPUT"
-            echo "version=$curr_version" >> "$GITHUB_OUTPUT"
           else
             echo "is_release=false" >> "$GITHUB_OUTPUT"
           fi
 
+          echo "version=$curr_version" >> "$GITHUB_OUTPUT"
+
   gh-release:
-    needs: [detect-release]
-    if: needs.detect-release.outputs.is_release == 'true'
+    needs: detect-release
+    if: ${{ needs.detect-release.outputs.is_release == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        
+        with:
+          fetch-depth: 0
       - name: Create release
         uses: softprops/action-gh-release@v1
         with:
           name: "New release ${{ needs.detect-release.outputs.version }}"
           tag_name: ${{ needs.detect-release.outputs.version }}
           generate_release_notes: true
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   publish-npm:
     needs: [detect-release, gh-release]
-    if: needs.detect-release.outputs.is_release == 'true'
+    if: ${{ needs.detect-release.outputs.is_release == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '18'
           registry-url: 'https://registry.npmjs.org'
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Publish to NPM
-        run: npm publish
+      - run: npm ci
+      - run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
