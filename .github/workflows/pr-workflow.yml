@@ -11,9 +11,13 @@ on:
   pull_request_target:
     types:
       - closed
+  push:
+    branches:
+      - main
 
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
   validate-branch-prefix:
@@ -115,21 +119,44 @@ jobs:
             exit 1
           fi
   
-  gh-release:
-    needs:
-      - bump-version-on-merge
-    if: github.event_name == 'pull_request_target' && github.event.action == 'closed' && github.event.pull_request.merged == true
+  detect-release:
     runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    outputs:
+      is_release: ${{ steps.check-release.outputs.is_release }}
+      version: ${{ steps.check-release.outputs.version }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.base.ref }}
-          fetch-depth: 0
+          fetch-depth: 2
+
+      - name: Detect release commit
+        id: check-release
+        run: |
+          prev_version=$(git show HEAD^:package.json | jq -r '.version' || echo "none")
+          curr_version=$(jq -r '.version' package.json)
+          echo "prev_version=$prev_version"
+          echo "curr_version=$curr_version"
+          if [[ "$prev_version" != "$curr_version" ]]; then
+            echo "is_release=true" >> "$GITHUB_OUTPUT"
+            echo "version=$curr_version" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_release=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  gh-release:
+    needs:
+      - detect-release
+    if: needs.detect-release.outputs.is_release == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
         
       - name: Get semver version
         id: version-check
-        run: echo "version=${{ needs.bump-version-on-merge.outputs.version }}" >> "$GITHUB_OUTPUT"
+        run: echo "version=${{ needs.detect-release.outputs.version }}" >> "$GITHUB_OUTPUT"
 
       - name: Create release
         uses: softprops/action-gh-release@v1
@@ -144,15 +171,13 @@ jobs:
 
   publish-npm:
     needs:
+      - detect-release
       - gh-release
-    if: github.event_name == 'pull_request_target' && github.event.action == 'closed' && github.event.pull_request.merged == true
+    if: needs.detect-release.outputs.is_release == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.base.ref }}
-          fetch-depth: 0
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
