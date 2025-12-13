@@ -168,7 +168,7 @@ But first, please, read the [Contributing](./CONTRIBUTING.md#Contributing) file.
 - [x] <s> Remove/find substitute for `yargs` package </s>
 - [ ] Add support for TypeScript
 - [ ] Add few samples of markdown templates to choose from
-- [x] Add unit tests (topic started in [this issue](https://github.com/403-html/mochawesome-json-to-md/issues/5))
+- [x] <s> Add unit tests (topic started in [this issue](https://github.com/403-html/mochawesome-json-to-md/issues/5)) </s>
 - [x] <s> Rewrite and add more documentation </s>
   - [x] <s> Readme </s>
   - [x] <s> Contributing guidelines </s>
