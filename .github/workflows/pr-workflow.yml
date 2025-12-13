@@ -13,12 +13,36 @@ permissions:
   pull-requests: write
 
 jobs:
+  event-flags:
+    runs-on: ubuntu-latest
+    outputs:
+      is_pr: ${{ steps.set.outputs.is_pr }}
+      is_push_main: ${{ steps.set.outputs.is_push_main }}
+      run_bump: ${{ steps.set.outputs.run_bump }}
+    steps:
+      - id: set
+        env:
+          IS_PR: ${{ github.event_name == 'pull_request' }}
+          IS_PR_TARGET: ${{ github.event_name == 'pull_request_target' }}
+          IS_PR_MERGED: ${{ github.event.pull_request.merged || false }}
+          IS_SAME_REPO: ${{ github.event.pull_request.head.repo.full_name == github.repository || false }}
+          IS_PUSH_MAIN: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        run: |
+          echo "is_pr=${IS_PR}" >> "$GITHUB_OUTPUT"
+          echo "is_push_main=${IS_PUSH_MAIN}" >> "$GITHUB_OUTPUT"
+          if [[ "${IS_PR_MERGED}" == "true" && ( "${IS_PR_TARGET}" == "true" || "${IS_SAME_REPO}" == "true" ) ]]; then
+            echo "run_bump=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run_bump=false" >> "$GITHUB_OUTPUT"
+          fi
+
   # -----------------------------
   # PR validation
   # -----------------------------
   validate-branch-prefix:
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
+    needs: event-flags
+    if: needs.event-flags.outputs.is_pr == 'true'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -38,7 +62,8 @@ jobs:
 
   check-pr-title:
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
+    needs: event-flags
+    if: needs.event-flags.outputs.is_pr == 'true'
     steps:
       - uses: actions/checkout@v4
 
@@ -60,7 +85,8 @@ jobs:
   # -----------------------------
   bump-and-open-release-pr:
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request_target' && github.event.pull_request.merged == true
+    needs: event-flags
+    if: needs.event-flags.outputs.run_bump == 'true'
     outputs:
       version: ${{ steps.bump-version.outputs.version }}
       branch: ${{ steps.release-branch.outputs.branch }}
@@ -141,7 +167,8 @@ jobs:
   # -----------------------------
   detect-release:
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: event-flags
+    if: needs.event-flags.outputs.is_push_main == 'true'
     outputs:
       is_release: ${{ steps.check.outputs.is_release }}
       version: ${{ steps.check.outputs.version }}
@@ -158,11 +185,15 @@ jobs:
           curr_version="$(jq -r '.version' package.json)"
           echo "curr_version=$curr_version"
 
-          prev_json="$(git show HEAD~1:package.json 2>/dev/null || true)"
-          if [[ -n "$prev_json" ]]; then
-            prev_version="$(echo "$prev_json" | jq -r '.version')"
-          else
-            prev_version="none"
+          prev_sha="${{ github.event.before }}"
+          echo "prev_sha=$prev_sha"
+
+          prev_version="none"
+          if [[ "$prev_sha" != "0000000000000000000000000000000000000000" ]]; then
+            prev_json="$(git show "${prev_sha}":package.json 2>/dev/null || true)"
+            if [[ -n "$prev_json" ]]; then
+              prev_version="$(echo "$prev_json" | jq -r '.version')"
+            fi
           fi
 
           echo "prev_version=$prev_version"
