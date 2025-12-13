@@ -5,6 +5,8 @@ on:
     types:
       - opened
       - synchronize
+      - edited
+      - reopened
       - closed
   pull_request_target:
     types:
@@ -102,9 +104,12 @@ jobs:
 
       - name: Check PR name
         run: |
-          pr_name=$(jq -r .pull_request.title "$GITHUB_EVENT_PATH" | tr -d '\r')
+          pr_number='${{ github.event.pull_request.number }}'
+          repo='${{ github.repository }}'
+          api_url="https://api.github.com/repos/$repo/pulls/$pr_number"
+          pr_name=$(curl -sSL -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" "$api_url" | jq -r .title | tr -d '\r')
           trimmed_title=$(echo "$pr_name" | sed -e 's/^ *//' -e 's/ *$//')
-          echo "PR title read from event: '$trimmed_title'"
+          echo "PR title fetched from API: '$trimmed_title'"
           if [[ ! ${trimmed_title,,} =~ ^(feat|fix|chore|docs|misc)(\([a-zA-Z]+\))?!?:\ +.*$ ]]; then
             echo "error: Pull request title must start with feat/fix/chore/docs/misc, followed by optional ! for breaking changes, followed by an optional scope in parentheses, followed by a colon, followed by a space, followed by a description."
             exit 1
