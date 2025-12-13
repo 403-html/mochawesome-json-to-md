@@ -31,4 +31,3 @@ To keep the codebase predictable and safe, contributors are expected to follow t
 - Guard assumptions with validations or assertions where appropriate.
 - Prefer predictable allocation and resource reuse in hot paths; clean up resources deterministically.
 - Run linting/static analysis and address warnings before submitting changes.
-

@@ -6,7 +6,7 @@ const pathPkg = require("path");
 const winston = require("winston");
 
 program
-  .option("-p, --path <path>", "Specify the path to the report")
+  .requiredOption("-p, --path <path>", "Specify the path to the report")
   .option("-o, --output <output>", "Specify the path for the markdown file", "./md-reports/output.md")
   .option("-t, --template <template>", "Specify the path to the template file", "./sample-template.md")
   .option("-T, --title <title>", "Specify the title for the report", "Test Report")
@@ -19,7 +19,7 @@ program
   .parse(process.argv);
 
 const createLogger = (verbose) => {
-  const level = verbose ? 'debug' : 'info';
+  const level = verbose ? "debug" : "info";
   return winston.createLogger({
     level,
     format: winston.format.combine(
@@ -37,6 +37,32 @@ const createLogger = (verbose) => {
 
 const logger = createLogger(program.opts().verbose);
 
+const ensureFileReadable = (filePath, label) => {
+  if (typeof filePath !== "string" || filePath.trim() === "") {
+    throw new Error(`${label} must be a non-empty string`);
+  }
+
+  let stats;
+  try {
+    stats = fs.statSync(filePath);
+  } catch (error) {
+    throw new Error(`${label} not accessible: ${filePath} (${error.message})`);
+  }
+
+  if (!stats.isFile()) {
+    throw new Error(`${label} is not a file: ${filePath}`);
+  }
+};
+
+const validateCliOptions = (options) => {
+  ensureFileReadable(options.path, "Input report path");
+  ensureFileReadable(options.template, "Template path");
+
+  if (typeof options.output !== "string" || options.output.trim() === "") {
+    throw new Error("Output path must be a non-empty string");
+  }
+};
+
 /**
  * Reads the JSON file and returns its content as an object.
  * @param {string} filePath - Path to the JSON file.
@@ -45,21 +71,39 @@ const logger = createLogger(program.opts().verbose);
  */
 const readJsonFile = (filePath) => {
   logger.debug(`Reading JSON file: ${filePath}`);
-  if (typeof filePath !== "string") {
-    logger.error(`Invalid file path provided: ${filePath}`);
-    throw new Error(`Invalid file path provided: ${filePath}`);
+
+  const fileContent = fs.readFileSync(filePath, "utf-8");
+  try {
+    const parsed = JSON.parse(fileContent);
+    logger.debug(`Successfully parsed JSON file: ${filePath}`);
+    return parsed;
+  } catch (error) {
+    throw new Error(`Error while parsing JSON file: ${filePath} (${error.message})`);
+  }
+};
+
+const validateTestResultsSchema = (testResults) => {
+  if (!testResults || typeof testResults !== "object") {
+    throw new Error("Test results must be an object");
   }
 
-  let jsonObj;
-  try {
-    logger.debug(`Parsing JSON file: ${filePath}`);
-    jsonObj = JSON.parse(fs.readFileSync(filePath));
-    logger.debug(`Successfully parsed JSON file: ${filePath}`);
-  } catch (err) {
-    logger.error(`Error while parsing JSON file: ${err}`);
-    throw new Error(`Error while parsing JSON file: ${err}`);
+  const { results, stats } = testResults;
+  if (!Array.isArray(results)) {
+    throw new Error('Test results must include a "results" array');
   }
-  return jsonObj;
+
+  if (!stats || typeof stats !== "object") {
+    throw new Error('Test results must include a "stats" object');
+  }
+
+  const requiredStats = ["start", "duration", "tests", "other"];
+  for (const statKey of requiredStats) {
+    if (stats[statKey] === undefined || stats[statKey] === null) {
+      throw new Error(`Stats missing required field "${statKey}"`);
+    }
+  }
+
+  return { results, stats };
 };
 
 /**
@@ -70,105 +114,104 @@ const readJsonFile = (filePath) => {
  * @returns {object} - Extracted information.
  */
 const extractTestResultsInfo = ({ results, stats }) => {
-  logger.debug('Extracting test results information');
+  logger.debug("Extracting test results information");
   const { start: startDate, duration, tests: totalTests, other: otherTests } = stats;
 
   const testTypes = ["passes", "failures", "pending", "skipped"];
-
   const categorizedTests = testTypes.map((type) =>
-    results.flatMap((result) =>
-      collectTestsByType({
-        type,
-        suite: result,
-        path: result.file,
-      })
-    )
+    collectTestsByType({
+      type,
+      suiteList: results,
+    })
   );
 
-  logger.debug('Finished extracting test results information');
+  const [passedTests, failedTests, skippedTests, skippedOtherTests] = categorizedTests;
+
+  logger.debug("Finished extracting test results information");
   return {
     startDate,
     duration,
-    passedTestsCount: categorizedTests[0].length,
-    failedTestsCount: categorizedTests[1].length,
-    skippedTestsCount: categorizedTests[2].length,
-    skippedCypressTestsCount: categorizedTests[3].length,
+    passedTestsCount: passedTests.length,
+    failedTestsCount: failedTests.length,
+    skippedTestsCount: skippedTests.length,
+    skippedOtherTestsCount: skippedOtherTests.length,
     otherTestsCount: otherTests,
     totalTests,
-    passedExists: categorizedTests[0].length > 0,
-    failedExists: categorizedTests[1].length > 0,
-    skippedExists: categorizedTests[2].length > 0,
-    skippedCypressExists: categorizedTests[3].length > 0,
-    passedTests: categorizedTests[0],
-    failedTests: categorizedTests[1],
-    skippedTests: categorizedTests[2],
-    skippedCypress: categorizedTests[3],
+    passedExists: passedTests.length > 0,
+    failedExists: failedTests.length > 0,
+    skippedExists: skippedTests.length > 0,
+    skippedOtherExists: skippedOtherTests.length > 0,
+    passedTests,
+    failedTests,
+    skippedTests,
+    skippedOtherTests,
   };
 };
 
 /**
- * Recursively collects all tests with a given type.
- * @param {object} param0 - Object containing 'type', 'suite', 'path', and 'cache' properties.
+ * Collects all tests of a given type without mutating the input suites.
+ * @param {object} param0 - Object containing type and suiteList.
  * @param {string} param0.type - Type of the test.
- * @param {object} param0.suite - Suite object.
- * @param {string} param0.path - Path to the test file.
- * @param {Array} param0.cache - Cache array.
+ * @param {Array} param0.suiteList - Array of root suite objects.
  * @returns {Array} - List of tests with the given type.
  */
-const collectTestsByType = ({ type, suite, path, cache = [] }) => {
-  logger.debug(`Collecting tests of type ${type}`);
-  const localCache = cache;
-  const { [type]: typeList, suites, tests } = suite;
+const collectTestsByType = ({ type, suiteList }) => {
+  const collected = [];
+  const stack = suiteList.map((suite) => ({ suite, path: suite.file || "" }));
 
-  if (typeList.length > 0) {
+  while (stack.length > 0) {
+    const { suite, path } = stack.pop();
+    const typeList = Array.isArray(suite[type]) ? suite[type] : [];
+    const tests = Array.isArray(suite.tests) ? suite.tests : [];
+    const childSuites = Array.isArray(suite.suites) ? suite.suites : [];
+
     for (const uuid of typeList) {
       const foundTestByUuid = tests.find((test) => test.uuid === uuid);
       if (!foundTestByUuid) {
-        logger.error(`Test with uuid ${uuid} not found`);
-        throw new Error(`Test with uuid ${uuid} not found`);
+        throw new Error(`Test with uuid ${uuid} not found for type ${type}`);
       }
-      logger.debug(`Found test with uuid ${uuid}`);
-      foundTestByUuid.path = path;
-      localCache.push({ path, ...foundTestByUuid });
+      collected.push({ ...foundTestByUuid, path });
+    }
+
+    for (const subSuite of childSuites) {
+      stack.push({ suite: subSuite, path: subSuite.file || path });
     }
   }
 
-  if (suites.length > 0) {
-    for (const subSuite of suites) {
-      collectTestsByType({
-        type,
-        suite: subSuite,
-        path: subSuite.file || path,
-        cache: localCache,
-      });
-    }
-  }
-
-  return localCache;
+  return collected;
 };
 
 const convertMochaToMarkdown = () => {
-  logger.info('Starting Mocha to Markdown conversion');
   const { path, output, template, title } = program.opts();
 
-  logger.info(`Reading test results from: ${path}`);
-  const testResults = readJsonFile(path);
+  try {
+    validateCliOptions({ path, output, template });
 
-  logger.info('Extracting test results information');
-  const extractedInfo = extractTestResultsInfo(testResults);
+    logger.info("Starting Mocha to Markdown conversion");
+    logger.info(`Reading test results from: ${path}`);
+    const testResults = validateTestResultsSchema(readJsonFile(path));
 
-  logger.info(`Reading template file: ${template}`);
-  const templateContent = fs.readFileSync(template, "utf-8");
+    logger.info("Extracting test results information");
+    const extractedInfo = extractTestResultsInfo(testResults);
 
-  logger.info('Rendering template with test results');
-  const renderedMarkdown = mustache.render(templateContent, {...extractedInfo, title});
+    logger.info(`Reading template file: ${template}`);
+    const templateContent = fs.readFileSync(template, "utf-8");
 
-  const outputPath = pathPkg.dirname(output);
-  logger.info(`Creating directory structure: ${outputPath}`);
-  fs.mkdirSync(outputPath, { recursive: true });
+    logger.info("Rendering template with test results");
+    const renderedMarkdown = mustache.render(templateContent, { ...extractedInfo, title });
 
-  logger.info(`Writing markdown to: ${output}`);
-  fs.writeFileSync(output, renderedMarkdown);
+    const outputPath = pathPkg.dirname(output);
+    logger.info(`Ensuring output directory: ${outputPath}`);
+    if (!fs.existsSync(outputPath)) {
+      fs.mkdirSync(outputPath, { recursive: true });
+    }
+
+    logger.info(`Writing markdown to: ${output}`);
+    fs.writeFileSync(output, renderedMarkdown);
+  } catch (error) {
+    logger.error(error.message);
+    process.exitCode = 1;
+  }
 };
 
 convertMochaToMarkdown();

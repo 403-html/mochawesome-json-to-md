@@ -13,7 +13,7 @@
 
 - 🔜 skipped: {{skippedTestsCount}}
 
-- ⚠️ skipped by Cypress: {{skippedCypressTestsCount}}
+- ⚠️ other skipped tests: {{skippedOtherTestsCount}}
 
 - ❇️ other: {{otherTestsCount}}
 
@@ -58,13 +58,13 @@
 </details>
 {{/skippedExists}}
 
-{{#skippedCypressExists}}
-## Skipped tests by Cypress
+{{#skippedOtherExists}}
+## Other skipped tests
 
 <details>
 <summary>Click to reveal</summary>
 <article>
-  {{#skippedCypress}}⚠️ - Path: {{path}}, test: {{title}}{{/skippedCypress}}
+  {{#skippedOtherTests}}⚠️ - Path: {{path}}, test: {{title}}{{/skippedOtherTests}}
 </article>
 </details>
-{{/skippedCypressExists}}
+{{/skippedOtherExists}}

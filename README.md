@@ -85,7 +85,7 @@ Singular tags will be replaced with the value of the tag.
 | `{{passedTestsCount}}` | Number of passed tests |
 | `{{failedTestsCount}}` | Number of failed tests |
 | `{{skippedTestsCount}}` | Number of skipped tests |
-| `{{skippedCypressTestsCount}}` | Number of skipped tests by Cypress |
+| `{{skippedOtherTestsCount}}` | Number of skipped tests by other tooling or runners |
 | `{{otherTestsCount}}` | Number of other tests |
 
 ### Block tags
@@ -99,7 +99,7 @@ Boolean tags will be replaced with the content between the tags if the condition
 | `{{#passedExists}}` | `{{/passedExists}}` | If there are any passed tests, then everything between these tags will be included in the report |
 | `{{#failedExists}}` | `{{/failedExists}}` | If there are any failed tests, then everything between these tags will be included in the report |
 | `{{#skippedExists}}` | `{{/skippedExists}}`  | If there are any skipped tests, then everything between these tags will be included in the report |
-| `{{#skippedCypressExists}}` | `{{/skippedCypressExists}}` | If there are any skipped tests by Cypress, then everything between these tags will be included in the report |
+| `{{#skippedOtherExists}}` | `{{/skippedOtherExists}}` | If there are any other skipped tests, then everything between these tags will be included in the report |
 
 #### Loop tags
 
@@ -110,7 +110,7 @@ Loop tags will be replaced with the content between the tags for each test with 
 | `{{#passedTests}}` | `{{/passedTests}}` | Everything between these tags will be included in the report for each passed test |
 | `{{#failedTests}}` | `{{/failedTests}}` | Everything between these tags will be included in the report for each failed test |
 | `{{#skippedTests}}` | `{{/skippedTests}}` | Everything between these tags will be included in the report for each skipped test |
-| `{{#skippedCypressTests}}` | `{{/skippedCypressTests}}` | Everything between these tags will be included in the report for each skipped test by Cypress |
+| `{{#skippedOtherTests}}` | `{{/skippedOtherTests}}` | Everything between these tags will be included in the report for each other skipped test |
 
 #### Test tags
 
