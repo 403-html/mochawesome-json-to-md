@@ -215,9 +215,14 @@ const configureProgram = () => {
     );
 };
 
-if (require.main === module) {
-  configureProgram().parse(process.argv);
+const runCli = (argv = process.argv) => {
+  configureProgram().parse(argv);
   convertMochaToMarkdown(program.opts());
+};
+
+/* istanbul ignore next */
+if (require.main === module) {
+  runCli(process.argv);
 }
 
 module.exports = {
@@ -225,6 +230,8 @@ module.exports = {
   convertMochaToMarkdown,
   extractTestResultsInfo,
   readJsonFile,
+  runCli,
   validateCliOptions,
   validateTestResultsSchema,
+  configureProgram,
 };
