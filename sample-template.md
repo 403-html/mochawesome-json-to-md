@@ -6,18 +6,14 @@
 ## Tests run stats
 
 - 📚 total tests: {{totalTests}}
-
 - ✔️ passed: {{passedTestsCount}}
-
 - ❌ failed: {{failedTestsCount}}
-
 - 🔜 skipped: {{skippedTestsCount}}
-
 - ⚠️ other skipped tests: {{skippedOtherTestsCount}}
-
 - ❇️ other: {{otherTestsCount}}
 
 {{#passedExists}}
+
 ## Passed tests
 
 <details>
@@ -31,6 +27,7 @@
 {{/passedExists}}
 
 {{#failedExists}}
+
 ## Failed tests
 
 <details>
@@ -43,11 +40,13 @@
 ```
 
 {{/failedTests}}
+
 </article>
 </details>
 {{/failedExists}}
 
 {{#skippedExists}}
+
 ## Skipped tests
 
 <details>
@@ -59,6 +58,7 @@
 {{/skippedExists}}
 
 {{#skippedOtherExists}}
+
 ## Other skipped tests
 
 <details>

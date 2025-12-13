@@ -1,12 +1,12 @@
 #!/usr/bin/env node
-const fs = require("fs");
-const { program } = require("commander");
-const mustache = require("mustache");
-const pathPkg = require("path");
-const winston = require("winston");
+const fs = require('fs');
+const { program } = require('commander');
+const mustache = require('mustache');
+const pathPkg = require('path');
+const winston = require('winston');
 
 const createLogger = (verbose) => {
-  const level = verbose ? "debug" : "info";
+  const level = verbose ? 'debug' : 'info';
   return winston.createLogger({
     level,
     format: winston.format.combine(
@@ -14,18 +14,16 @@ const createLogger = (verbose) => {
       winston.format.colorize(),
       winston.format.printf(({ timestamp, level: logLevel, message }) => {
         return `${timestamp} | ${logLevel} | ${message}`;
-      }),
+      })
     ),
-    transports: [
-      new winston.transports.Console({ level, handleExceptions: true }),
-    ],
+    transports: [new winston.transports.Console({ level, handleExceptions: true })],
   });
 };
 
 let logger = createLogger(false);
 
 const ensureFileReadable = (filePath, label) => {
-  if (typeof filePath !== "string" || filePath.trim() === "") {
+  if (typeof filePath !== 'string' || filePath.trim() === '') {
     throw new Error(`${label} must be a non-empty string`);
   }
 
@@ -42,11 +40,11 @@ const ensureFileReadable = (filePath, label) => {
 };
 
 const validateCliOptions = (options) => {
-  ensureFileReadable(options.path, "Input report path");
-  ensureFileReadable(options.template, "Template path");
+  ensureFileReadable(options.path, 'Input report path');
+  ensureFileReadable(options.template, 'Template path');
 
-  if (typeof options.output !== "string" || options.output.trim() === "") {
-    throw new Error("Output path must be a non-empty string");
+  if (typeof options.output !== 'string' || options.output.trim() === '') {
+    throw new Error('Output path must be a non-empty string');
   }
 };
 
@@ -59,7 +57,7 @@ const validateCliOptions = (options) => {
 const readJsonFile = (filePath) => {
   logger.debug(`Reading JSON file: ${filePath}`);
 
-  const fileContent = fs.readFileSync(filePath, "utf-8");
+  const fileContent = fs.readFileSync(filePath, 'utf-8');
   try {
     const parsed = JSON.parse(fileContent);
     logger.debug(`Successfully parsed JSON file: ${filePath}`);
@@ -70,8 +68,8 @@ const readJsonFile = (filePath) => {
 };
 
 const validateTestResultsSchema = (testResults) => {
-  if (!testResults || typeof testResults !== "object") {
-    throw new Error("Test results must be an object");
+  if (!testResults || typeof testResults !== 'object') {
+    throw new Error('Test results must be an object');
   }
 
   const { results, stats } = testResults;
@@ -79,11 +77,11 @@ const validateTestResultsSchema = (testResults) => {
     throw new Error('Test results must include a "results" array');
   }
 
-  if (!stats || typeof stats !== "object") {
+  if (!stats || typeof stats !== 'object') {
     throw new Error('Test results must include a "stats" object');
   }
 
-  const requiredStats = ["start", "duration", "tests", "other"];
+  const requiredStats = ['start', 'duration', 'tests', 'other'];
   for (const statKey of requiredStats) {
     if (stats[statKey] === undefined || stats[statKey] === null) {
       throw new Error(`Stats missing required field "${statKey}"`);
@@ -101,10 +99,10 @@ const validateTestResultsSchema = (testResults) => {
  * @returns {object} - Extracted information.
  */
 const extractTestResultsInfo = ({ results, stats }) => {
-  logger.debug("Extracting test results information");
+  logger.debug('Extracting test results information');
   const { start: startDate, duration, tests: totalTests, other: otherTests } = stats;
 
-  const testTypes = ["passes", "failures", "pending", "skipped"];
+  const testTypes = ['passes', 'failures', 'pending', 'skipped'];
   const categorizedTests = testTypes.map((type) =>
     collectTestsByType({
       type,
@@ -114,7 +112,7 @@ const extractTestResultsInfo = ({ results, stats }) => {
 
   const [passedTests, failedTests, skippedTests, skippedOtherTests] = categorizedTests;
 
-  logger.debug("Finished extracting test results information");
+  logger.debug('Finished extracting test results information');
   return {
     startDate,
     duration,
@@ -144,7 +142,7 @@ const extractTestResultsInfo = ({ results, stats }) => {
  */
 const collectTestsByType = ({ type, suiteList }) => {
   const collected = [];
-  const queue = suiteList.map((suite) => ({ suite, path: suite.file || "" }));
+  const queue = suiteList.map((suite) => ({ suite, path: suite.file || '' }));
 
   while (queue.length > 0) {
     const { suite, path } = queue.shift();
@@ -174,17 +172,17 @@ const convertMochaToMarkdown = (options) => {
   try {
     validateCliOptions({ path, output, template });
 
-    logger.info("Starting Mocha to Markdown conversion");
+    logger.info('Starting Mocha to Markdown conversion');
     logger.info(`Reading test results from: ${path}`);
     const testResults = validateTestResultsSchema(readJsonFile(path));
 
-    logger.info("Extracting test results information");
+    logger.info('Extracting test results information');
     const extractedInfo = extractTestResultsInfo(testResults);
 
     logger.info(`Reading template file: ${template}`);
-    const templateContent = fs.readFileSync(template, "utf-8");
+    const templateContent = fs.readFileSync(template, 'utf-8');
 
-    logger.info("Rendering template with test results");
+    logger.info('Rendering template with test results');
     const renderedMarkdown = mustache.render(templateContent, { ...extractedInfo, title });
 
     const outputPath = pathPkg.dirname(output);
@@ -203,15 +201,23 @@ const convertMochaToMarkdown = (options) => {
 
 const configureProgram = () => {
   return program
-    .requiredOption("-p, --path <path>", "Specify the path to the report")
-    .option("-o, --output <output>", "Specify the path for the markdown file", "./md-reports/output.md")
-    .option("-t, --template <template>", "Specify the path to the template file", "./sample-template.md")
-    .option("-T, --title <title>", "Specify the title for the report", "Test Report")
-    .option("-v, --verbose", "Enable verbose mode for debug logging")
-    .usage("$0 -p file/path.json [options]")
+    .requiredOption('-p, --path <path>', 'Specify the path to the report')
+    .option(
+      '-o, --output <output>',
+      'Specify the path for the markdown file',
+      './md-reports/output.md'
+    )
+    .option(
+      '-t, --template <template>',
+      'Specify the path to the template file',
+      './sample-template.md'
+    )
+    .option('-T, --title <title>', 'Specify the title for the report', 'Test Report')
+    .option('-v, --verbose', 'Enable verbose mode for debug logging')
+    .usage('$0 -p file/path.json [options]')
     .addHelpText(
-      "after",
-      "\nFor more information, visit https://github.com/403-html/mochawesome-json-to-md"
+      'after',
+      '\nFor more information, visit https://github.com/403-html/mochawesome-json-to-md'
     );
 };
 

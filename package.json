@@ -9,7 +9,9 @@
   "scripts": {
     "eslint": "eslint --ext .js ./",
     "test": "jest",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "format": "prettier --write \"**/*.{js,md,json,cjs}\"",
+    "lint:md": "markdownlint \"**/*.md\""
   },
   "type": "commonjs",
   "repository": {
@@ -39,6 +41,8 @@
     "@typescript-eslint/parser": "^5.62.0",
     "eslint": "^8.57.1",
     "jest": "^30.2.0",
-    "lefthook": "^1.5.2"
+    "lefthook": "^1.5.2",
+    "markdownlint-cli": "^0.47.0",
+    "prettier": "^3.7.4"
   }
 }
