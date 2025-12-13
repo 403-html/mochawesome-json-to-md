@@ -5,19 +5,6 @@ const mustache = require("mustache");
 const pathPkg = require("path");
 const winston = require("winston");
 
-program
-  .requiredOption("-p, --path <path>", "Specify the path to the report")
-  .option("-o, --output <output>", "Specify the path for the markdown file", "./md-reports/output.md")
-  .option("-t, --template <template>", "Specify the path to the template file", "./sample-template.md")
-  .option("-T, --title <title>", "Specify the title for the report", "Test Report")
-  .option("-v, --verbose", "Enable verbose mode for debug logging")
-  .usage("$0 -p file/path.json [options]")
-  .addHelpText(
-    "after",
-    "\nFor more information, visit https://github.com/403-html/mochawesome-json-to-md"
-  )
-  .parse(process.argv);
-
 const createLogger = (verbose) => {
   const level = verbose ? "debug" : "info";
   return winston.createLogger({
@@ -35,7 +22,7 @@ const createLogger = (verbose) => {
   });
 };
 
-const logger = createLogger(program.opts().verbose);
+let logger = createLogger(false);
 
 const ensureFileReadable = (filePath, label) => {
   if (typeof filePath !== "string" || filePath.trim() === "") {
@@ -157,10 +144,10 @@ const extractTestResultsInfo = ({ results, stats }) => {
  */
 const collectTestsByType = ({ type, suiteList }) => {
   const collected = [];
-  const stack = suiteList.map((suite) => ({ suite, path: suite.file || "" }));
+  const queue = suiteList.map((suite) => ({ suite, path: suite.file || "" }));
 
-  while (stack.length > 0) {
-    const { suite, path } = stack.pop();
+  while (queue.length > 0) {
+    const { suite, path } = queue.shift();
     const typeList = Array.isArray(suite[type]) ? suite[type] : [];
     const tests = Array.isArray(suite.tests) ? suite.tests : [];
     const childSuites = Array.isArray(suite.suites) ? suite.suites : [];
@@ -174,16 +161,16 @@ const collectTestsByType = ({ type, suiteList }) => {
     }
 
     for (const subSuite of childSuites) {
-      stack.push({ suite: subSuite, path: subSuite.file || path });
+      queue.push({ suite: subSuite, path: subSuite.file || path });
     }
   }
 
   return collected;
 };
 
-const convertMochaToMarkdown = () => {
-  const { path, output, template, title } = program.opts();
-
+const convertMochaToMarkdown = (options) => {
+  const { path, output, template, title, verbose } = options;
+  logger = createLogger(Boolean(verbose));
   try {
     validateCliOptions({ path, output, template });
 
@@ -214,4 +201,30 @@ const convertMochaToMarkdown = () => {
   }
 };
 
-convertMochaToMarkdown();
+const configureProgram = () => {
+  return program
+    .requiredOption("-p, --path <path>", "Specify the path to the report")
+    .option("-o, --output <output>", "Specify the path for the markdown file", "./md-reports/output.md")
+    .option("-t, --template <template>", "Specify the path to the template file", "./sample-template.md")
+    .option("-T, --title <title>", "Specify the title for the report", "Test Report")
+    .option("-v, --verbose", "Enable verbose mode for debug logging")
+    .usage("$0 -p file/path.json [options]")
+    .addHelpText(
+      "after",
+      "\nFor more information, visit https://github.com/403-html/mochawesome-json-to-md"
+    );
+};
+
+if (require.main === module) {
+  configureProgram().parse(process.argv);
+  convertMochaToMarkdown(program.opts());
+}
+
+module.exports = {
+  collectTestsByType,
+  convertMochaToMarkdown,
+  extractTestResultsInfo,
+  readJsonFile,
+  validateCliOptions,
+  validateTestResultsSchema,
+};

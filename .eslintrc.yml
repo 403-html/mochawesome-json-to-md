@@ -38,3 +38,8 @@ rules:
   max-depth:
     - warn
     - 3
+overrides:
+  - files:
+      - "tests/**/*"
+    env:
+      jest: true
