@@ -45,7 +45,7 @@ jobs:
 
   bump-version-on-merge:
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request_target' && github.event.action == 'closed' && github.event.pull_request.merged == true
+    if: github.event.pull_request.merged == true && (github.event_name == 'pull_request' || github.event_name == 'pull_request_target')
     outputs:
       version: ${{ steps.bump-version.outputs.version }}
       prefix: ${{ steps.branch-prefix.outputs.prefix }}
