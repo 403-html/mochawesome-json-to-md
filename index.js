@@ -25,8 +25,8 @@ const createLogger = (verbose) => {
     format: winston.format.combine(
       winston.format.timestamp(),
       winston.format.colorize(),
-      winston.format.printf(({ timestamp, level, message }) => {
-        return `${timestamp} | ${level} | ${message}`;
+      winston.format.printf(({ timestamp, level: logLevel, message }) => {
+        return `${timestamp} | ${logLevel} | ${message}`;
       }),
     ),
     transports: [
