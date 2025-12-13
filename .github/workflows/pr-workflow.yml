@@ -1,54 +1,69 @@
-name: PR workflow
+name: Release pipeline
 
 on:
   pull_request:
-    types:
-      - opened
-      - synchronize
-      - edited
-      - reopened
-      - closed
+    types: [opened, synchronize, edited, reopened]
   pull_request_target:
-    types:
-      - closed
+    types: [closed]
   push:
-    branches:
-      - main
+    branches: [main]
 
 permissions:
   contents: write
   pull-requests: write
 
 jobs:
+  # -----------------------------
+  # PR validation
+  # -----------------------------
   validate-branch-prefix:
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && github.event.action != 'closed'
+    if: github.event_name == 'pull_request'
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.ref }}
 
-      - name: Get branch prefix
-        id: branch-prefix
+      - id: branch-prefix
         run: echo "prefix=$(echo '${{ github.event.pull_request.head.ref }}' | cut -d '/' -f 1)" >> "$GITHUB_OUTPUT"
 
-      - name: Check if branch prefix is valid (major, minor, patch)
+      - name: Check branch prefix (major/minor/patch/dependabot)
         run: |
           prefix='${{ steps.branch-prefix.outputs.prefix }}'
           echo "branch prefix: $prefix"
           if [[ "$prefix" != "major" && "$prefix" != "minor" && "$prefix" != "patch" && "$prefix" != "dependabot" ]]; then
-            echo "Branch prefix is not valid, exiting... allowed prefixes are major, minor, patch, dependabot"
+            echo "Branch prefix is not valid. Allowed: major, minor, patch, dependabot."
             exit 1
           fi
-          echo "Branch prefix is valid"
 
-  bump-version-on-merge:
+  check-pr-title:
     runs-on: ubuntu-latest
-    if: github.event.pull_request.merged == true && (github.event_name == 'pull_request' || github.event_name == 'pull_request_target')
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate PR title
+        run: |
+          pr_number='${{ github.event.pull_request.number }}'
+          repo='${{ github.repository }}'
+          api_url="https://api.github.com/repos/$repo/pulls/$pr_number"
+          pr_name=$(curl -sSL -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" "$api_url" | jq -r .title | tr -d '\r')
+          trimmed_title=$(echo "$pr_name" | sed -e 's/^ *//' -e 's/ *$//')
+          echo "PR title from API: '$trimmed_title'"
+          if [[ ! ${trimmed_title,,} =~ ^(feat|fix|chore|docs|misc)(\([a-zA-Z]+\))?!?:\ +.*$ ]]; then
+            echo "error: Pull request title must start with feat/fix/chore/docs/misc, optional scope (!), colon, space, description."
+            exit 1
+          fi
+
+  # -----------------------------
+  # After merge: bump & open release PR
+  # -----------------------------
+  bump-and-open-release-pr:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request_target' && github.event.pull_request.merged == true
     outputs:
       version: ${{ steps.bump-version.outputs.version }}
-      prefix: ${{ steps.branch-prefix.outputs.prefix }}
+      branch: ${{ steps.release-branch.outputs.branch }}
     steps:
       - name: Checkout base branch
         uses: actions/checkout@v4
@@ -61,8 +76,7 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Get branch prefix
-        id: branch-prefix
+      - id: branch-prefix
         run: echo "prefix=$(echo '${{ github.event.pull_request.head.ref }}' | cut -d '/' -f 1)" >> "$GITHUB_OUTPUT"
 
       - name: Validate branch prefix
@@ -70,7 +84,7 @@ jobs:
           prefix='${{ steps.branch-prefix.outputs.prefix }}'
           echo "branch prefix: $prefix"
           if [[ "$prefix" != "major" && "$prefix" != "minor" && "$prefix" != "patch" && "$prefix" != "dependabot" ]]; then
-            echo "Branch prefix is not valid, exiting... allowed prefixes are major, minor, patch, dependabot"
+            echo "Branch prefix is not valid. Allowed: major, minor, patch, dependabot."
             exit 1
           fi
 
@@ -79,7 +93,7 @@ jobs:
           git config --global user.email "${{ secrets.MY_EMAIL }}"
           git config --global user.name "${{ secrets.MY_USERNAME }}"
 
-      - name: Set next version number based on prefix
+      - name: Bump version
         id: bump-version
         run: |
           prefix='${{ steps.branch-prefix.outputs.prefix }}'
@@ -92,33 +106,39 @@ jobs:
           fi
           echo "version=$(jq -r '.version' package.json)" >> "$GITHUB_OUTPUT"
       
-      - name: Commit and push changes to main
+      - name: Commit bump
         run: |
           version='${{ steps.bump-version.outputs.version }}'
           git add package.json package-lock.json
           git commit -m "chore(release): bump ${{ steps.branch-prefix.outputs.prefix }} version to $version"
-          git push origin HEAD
 
-  check-naming:
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && github.event.action != 'closed'
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Check PR name
+      - name: Push release branch
+        id: release-branch
         run: |
-          pr_number='${{ github.event.pull_request.number }}'
-          repo='${{ github.repository }}'
-          api_url="https://api.github.com/repos/$repo/pulls/$pr_number"
-          pr_name=$(curl -sSL -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" "$api_url" | jq -r .title | tr -d '\r')
-          trimmed_title=$(echo "$pr_name" | sed -e 's/^ *//' -e 's/ *$//')
-          echo "PR title fetched from API: '$trimmed_title'"
-          if [[ ! ${trimmed_title,,} =~ ^(feat|fix|chore|docs|misc)(\([a-zA-Z]+\))?!?:\ +.*$ ]]; then
-            echo "error: Pull request title must start with feat/fix/chore/docs/misc, followed by optional ! for breaking changes, followed by an optional scope in parentheses, followed by a colon, followed by a space, followed by a description."
-            exit 1
-          fi
-  
+          version='${{ steps.bump-version.outputs.version }}'
+          branch="release/$version"
+          git checkout -b "$branch"
+          git push origin "$branch"
+          echo "branch=$branch" >> "$GITHUB_OUTPUT"
+
+      - name: Open release PR
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ steps.release-branch.outputs.branch }}
+          base: ${{ github.event.pull_request.base.ref }}
+          title: "chore(release): bump ${{ steps.branch-prefix.outputs.prefix }} version to ${{ steps.bump-version.outputs.version }}"
+          body: |
+            Automated release PR created after merge.
+
+            - prefix: ${{ steps.branch-prefix.outputs.prefix }}
+            - version: ${{ steps.bump-version.outputs.version }}
+          labels: release
+          draft: false
+
+  # -----------------------------
+  # On push to main: release + publish if version changed
+  # -----------------------------
   detect-release:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -126,12 +146,11 @@ jobs:
       is_release: ${{ steps.check-release.outputs.is_release }}
       version: ${{ steps.check-release.outputs.version }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 2
 
-      - name: Detect release commit
+      - name: Detect version change
         id: check-release
         run: |
           prev_version=$(git show HEAD^:package.json | jq -r '.version' || echo "none")
@@ -146,23 +165,17 @@ jobs:
           fi
 
   gh-release:
-    needs:
-      - detect-release
+    needs: [detect-release]
     if: needs.detect-release.outputs.is_release == 'true'
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         
-      - name: Get semver version
-        id: version-check
-        run: echo "version=${{ needs.detect-release.outputs.version }}" >> "$GITHUB_OUTPUT"
-
       - name: Create release
         uses: softprops/action-gh-release@v1
         with:
-          name: "New release ${{ steps.version-check.outputs.version }}"
-          tag_name: ${{ steps.version-check.outputs.version }}
+          name: "New release ${{ needs.detect-release.outputs.version }}"
+          tag_name: ${{ needs.detect-release.outputs.version }}
           generate_release_notes: true
           draft: false
           prerelease: false
@@ -170,14 +183,11 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   publish-npm:
-    needs:
-      - detect-release
-      - gh-release
+    needs: [detect-release, gh-release]
     if: needs.detect-release.outputs.is_release == 'true'
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
