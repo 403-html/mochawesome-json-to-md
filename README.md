@@ -141,7 +141,7 @@ Test tags will be replaced with the value of the tag for each test with given st
 ## Safety, linting, and conduct
 
 - Safety rules for code contributions live in the [Code of Conduct](./CODE_OF_CONDUCT.md); follow them when writing or reviewing code.
-- ESLint is configured with stricter rules (e.g., enforced curly braces, strict equality, explicit defaults, max function length) to surface risky patterns early. Run `npm run eslint` before opening a PR.
+- ESLint is configured with stricter rules (enforced curly braces, strict equality, explicit defaults, max function length) to surface risky patterns early. Run `npm run eslint` before opening a PR.
 - All contributors are expected to abide by the [Code of Conduct](./CODE_OF_CONDUCT.md).
 
 ## Where can I get more help, if I need it?
@@ -168,7 +168,7 @@ But first, please, read the [Contributing](./CONTRIBUTING.md#Contributing) file.
 - [x] <s> Remove/find substitute for `yargs` package </s>
 - [ ] Add support for TypeScript
 - [ ] Add few samples of markdown templates to choose from
-- [ ] Add unit tests (topic started in [this issue](https://github.com/403-html/mochawesome-json-to-md/issues/5))
+- [x] Add unit tests (topic started in [this issue](https://github.com/403-html/mochawesome-json-to-md/issues/5))
 - [x] <s> Rewrite and add more documentation </s>
   - [x] <s> Readme </s>
   - [x] <s> Contributing guidelines </s>
