@@ -6,9 +6,9 @@ on:
       - opened
       - synchronize
       - closed
-  push:
-    branches:
-      - main
+  pull_request_target:
+    types:
+      - closed
 
 permissions:
   contents: write
@@ -39,7 +39,10 @@ jobs:
 
   bump-version-on-merge:
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true
+    if: github.event_name == 'pull_request_target' && github.event.action == 'closed' && github.event.pull_request.merged == true
+    outputs:
+      version: ${{ steps.bump-version.outputs.version }}
+      prefix: ${{ steps.branch-prefix.outputs.prefix }}
     steps:
       - name: Checkout base branch
         uses: actions/checkout@v4
@@ -108,15 +111,20 @@ jobs:
           fi
   
   gh-release:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && startsWith(github.event.head_commit.message, 'chore(release)')
+    needs:
+      - bump-version-on-merge
+    if: github.event_name == 'pull_request_target' && github.event.action == 'closed' && github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+          fetch-depth: 0
         
       - name: Get semver version
         id: version-check
-        run: echo "version=$(jq -r '.version' package.json)" >> "$GITHUB_OUTPUT"
+        run: echo "version=${{ needs.bump-version-on-merge.outputs.version }}" >> "$GITHUB_OUTPUT"
 
       - name: Create release
         uses: softprops/action-gh-release@v1
@@ -130,13 +138,16 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   publish-npm:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && startsWith(github.event.head_commit.message, 'chore(release)')
-    runs-on: ubuntu-latest
     needs:
       - gh-release
+    if: github.event_name == 'pull_request_target' && github.event.action == 'closed' && github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+          fetch-depth: 0
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
