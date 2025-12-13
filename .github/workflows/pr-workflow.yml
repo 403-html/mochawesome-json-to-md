@@ -3,8 +3,6 @@ name: Release pipeline
 on:
   pull_request:
     types: [opened, synchronize, edited, reopened, closed]
-  pull_request_target:
-    types: [closed]
   push:
     branches: [main]
 
@@ -13,36 +11,12 @@ permissions:
   pull-requests: write
 
 jobs:
-  event-flags:
-    runs-on: ubuntu-latest
-    outputs:
-      is_pr: ${{ steps.set.outputs.is_pr }}
-      is_push_main: ${{ steps.set.outputs.is_push_main }}
-      run_bump: ${{ steps.set.outputs.run_bump }}
-    steps:
-      - id: set
-        env:
-          IS_PR: ${{ github.event_name == 'pull_request' }}
-          IS_PR_TARGET: ${{ github.event_name == 'pull_request_target' }}
-          IS_PR_MERGED: ${{ github.event.pull_request.merged || false }}
-          IS_SAME_REPO: ${{ github.event.pull_request.head.repo.full_name == github.repository || false }}
-          IS_PUSH_MAIN: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-        run: |
-          echo "is_pr=${IS_PR}" >> "$GITHUB_OUTPUT"
-          echo "is_push_main=${IS_PUSH_MAIN}" >> "$GITHUB_OUTPUT"
-          if [[ "${IS_PR_MERGED}" == "true" && ( "${IS_PR_TARGET}" == "true" || "${IS_SAME_REPO}" == "true" ) ]]; then
-            echo "run_bump=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "run_bump=false" >> "$GITHUB_OUTPUT"
-          fi
-
   # -----------------------------
   # PR validation
   # -----------------------------
   validate-branch-prefix:
     runs-on: ubuntu-latest
-    needs: event-flags
-    if: needs.event-flags.outputs.is_pr == 'true'
+    if: github.event_name == 'pull_request' && github.event.action != 'closed'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -62,8 +36,7 @@ jobs:
 
   check-pr-title:
     runs-on: ubuntu-latest
-    needs: event-flags
-    if: needs.event-flags.outputs.is_pr == 'true'
+    if: github.event_name == 'pull_request' && github.event.action != 'closed'
     steps:
       - uses: actions/checkout@v4
 
@@ -85,8 +58,7 @@ jobs:
   # -----------------------------
   bump-and-open-release-pr:
     runs-on: ubuntu-latest
-    needs: event-flags
-    if: needs.event-flags.outputs.run_bump == 'true'
+    if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true
     outputs:
       version: ${{ steps.bump-version.outputs.version }}
       branch: ${{ steps.release-branch.outputs.branch }}
@@ -167,8 +139,7 @@ jobs:
   # -----------------------------
   detect-release:
     runs-on: ubuntu-latest
-    needs: event-flags
-    if: needs.event-flags.outputs.is_push_main == 'true'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     outputs:
       is_release: ${{ steps.check.outputs.is_release }}
       version: ${{ steps.check.outputs.version }}
