@@ -105,7 +105,7 @@ jobs:
           target_version="$base_version"
           if [[ -n "$bump" ]]; then
             has_label="true"
-            target_version="$(node - "$base_version" "$bump" <<'NODE'
+            target_version="$(node -e "
               const base = process.argv[1];
               const bump = process.argv[2];
               const parts = base.split('.').map((n) => parseInt(n, 10));
@@ -121,8 +121,7 @@ jobs:
                 pat += 1;
               }
               console.log(`${maj}.${min}.${pat}`);
-            NODE
-            )"
+            " "$base_version" "$bump")"
           fi
 
           echo "bump_type=$bump" >> "$GITHUB_OUTPUT"
@@ -136,21 +135,19 @@ jobs:
           set -euo pipefail
           target='${{ steps.compute.outputs.target_version }}'
           echo "Setting version to $target"
-          node <<'NODE'
+          node -e "
             const fs = require('fs');
             const target = process.env.TARGET;
-            function update(path) {
+            ['package.json', 'package-lock.json'].forEach((path) => {
               if (!fs.existsSync(path)) return;
               const json = JSON.parse(fs.readFileSync(path, 'utf8'));
               json.version = target;
-              if (json.packages && json.packages[""]) {
-                json.packages[""].version = target;
+              if (json.packages && json.packages['']) {
+                json.packages[''].version = target;
               }
               fs.writeFileSync(path, JSON.stringify(json, null, 2) + '\n');
-            }
-            update('package.json');
-            update('package-lock.json');
-          NODE
+            });
+          "
           echo "version=$target" >> "$GITHUB_OUTPUT"
         env:
           TARGET: ${{ steps.compute.outputs.target_version }}
