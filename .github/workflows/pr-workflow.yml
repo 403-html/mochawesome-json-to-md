@@ -62,8 +62,6 @@ jobs:
       github.event_name == 'pull_request' &&
       github.event.pull_request.state == 'open' &&
       github.event.pull_request.base.ref == 'main'
-    outputs:
-      version: ${{ steps.bump-version.outputs.version }}
     steps:
       - name: Checkout PR head
         uses: actions/checkout@v4
@@ -81,16 +79,10 @@ jobs:
           git config --global user.email "${{ secrets.MY_EMAIL }}"
           git config --global user.name "${{ secrets.MY_USERNAME }}"
 
-      - name: Compute target version from labels
-        id: compute
+      - name: Derive bump from label
+        id: bump-type
         run: |
           set -euo pipefail
-          base_branch='${{ github.event.pull_request.base.ref }}'
-          git fetch origin "$base_branch" --depth=1
-
-          base_version="$(git show "origin/$base_branch:package.json" | jq -r '.version')"
-          echo "base_version=$base_version"
-
           labels='${{ toJson(github.event.pull_request.labels) }}'
           bump=""
           for label in $(echo "$labels" | jq -r '.[].name'); do
@@ -100,65 +92,35 @@ jobs:
               release:patch) bump="patch" ;;
             esac
           done
-
-          has_label="false"
-          target_version="$base_version"
-          if [[ -n "$bump" ]]; then
-            has_label="true"
-            target_version="$(node -e 'const base=process.argv[1]; const bump=process.argv[2]; const parts=base.split(\".\").map(Number); if(parts.length!==3||parts.some((n)=>Number.isNaN(n))){throw new Error(\"Invalid base version: \"+base);} let [maj,min,pat]=parts; if(bump===\"major\"){maj++;min=0;pat=0;} else if(bump===\"minor\"){min++;pat=0;} else {pat++;} console.log(`${maj}.${min}.${pat}`);' "$base_version" "$bump")"
-          fi
-
-          echo "bump_type=$bump" >> "$GITHUB_OUTPUT"
-          echo "base_version=$base_version" >> "$GITHUB_OUTPUT"
-          echo "target_version=$target_version" >> "$GITHUB_OUTPUT"
-          echo "has_label=$has_label" >> "$GITHUB_OUTPUT"
-
-      - name: Apply version to package files
-        id: bump-version
-        run: |
-          set -euo pipefail
-          target='${{ steps.compute.outputs.target_version }}'
-          echo "Setting version to $target"
-          node -e 'const fs=require("fs"); const target=process.env.TARGET; ["package.json","package-lock.json"].forEach((path)=>{ if(!fs.existsSync(path)) return; const json=JSON.parse(fs.readFileSync(path,"utf8")); json.version=target; if(json.packages && json.packages[""]){ json.packages[""].version=target; } fs.writeFileSync(path, JSON.stringify(json,null,2)+"\n"); });'
-          echo "version=$target" >> "$GITHUB_OUTPUT"
-        env:
-          TARGET: ${{ steps.compute.outputs.target_version }}
-      
-      - name: Commit version change if needed
-        id: commit
-        run: |
-          set -euo pipefail
-          if git diff --quiet; then
-            echo "No version changes to commit."
-            echo "committed=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          has_label='${{ steps.compute.outputs.has_label }}'
-          bump='${{ steps.compute.outputs.bump_type }}'
-          base_version='${{ steps.compute.outputs.base_version }}'
-          target='${{ steps.bump-version.outputs.version }}'
-
-          msg="chore(release): bump ${bump:-patch} to $target"
-          if [[ "$has_label" != "true" ]]; then
-            msg="chore(release): reset version to $base_version (no release label)"
-          fi
-
-          git add package.json package-lock.json
-          git commit -m "$msg"
-          echo "committed=true" >> "$GITHUB_OUTPUT"
-
-      - name: Push changes to PR branch
-        if: steps.commit.outputs.committed == 'true'
-        run: |
-          git push origin HEAD:"${{ github.event.pull_request.head.ref }}"
-
-      - name: Enforce release label
-        run: |
-          if [[ '${{ steps.compute.outputs.has_label }}' != 'true' ]]; then
-            echo "Missing release label (release:major|release:minor|release:patch). Add one to trigger a bump."
+          if [[ -z "$bump" ]]; then
+            echo "Missing release label (release:major|release:minor|release:patch)." >&2
             exit 1
           fi
+          echo "bump=$bump" >> "$GITHUB_OUTPUT"
+
+      - name: Rebase onto base branch
+        run: |
+          base_branch='${{ github.event.pull_request.base.ref }}'
+          git fetch origin "$base_branch" --depth=1
+          git rebase "origin/$base_branch"
+
+      - name: Bump version with npm
+        id: bump-version
+        run: |
+          bump='${{ steps.bump-type.outputs.bump }}'
+          npm --no-git-tag-version version "$bump"
+          echo "version=$(jq -r '.version' package.json)" >> "$GITHUB_OUTPUT"
+      
+      - name: Commit version change
+        run: |
+          bump='${{ steps.bump-type.outputs.bump }}'
+          version='${{ steps.bump-version.outputs.version }}'
+          git add package.json package-lock.json
+          git commit -m "chore(release): bump $bump to $version"
+
+      - name: Push changes to PR branch
+        run: |
+          git push origin HEAD:"${{ github.event.pull_request.head.ref }}" --force-with-lease
 
   # -----------------------------
   # On push to main: release + publish if version changed
