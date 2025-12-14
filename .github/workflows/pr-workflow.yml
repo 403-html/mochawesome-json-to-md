@@ -2,7 +2,7 @@ name: Release pipeline
 
 on:
   pull_request:
-    types: [opened, synchronize, edited, reopened, closed]
+    types: [opened, synchronize, edited, reopened, labeled, unlabeled, ready_for_review]
   push:
     branches: [main]
 
@@ -54,31 +54,19 @@ jobs:
           fi
 
   # -----------------------------
-  # After merge: bump & open release PR
+  # Bump on PR (label-driven)
   # -----------------------------
-  bump-and-open-release-pr:
+  bump-on-pr:
     runs-on: ubuntu-latest
-    # Only run for merged PRs whose head branches are our bump prefixes,
-    # skip the release/* PR to avoid looping.
     if: >
       github.event_name == 'pull_request' &&
-      github.event.action == 'closed' &&
-      github.event.pull_request.merged == true &&
-      !startsWith(github.event.pull_request.head.ref, 'release/') &&
-      (
-        startsWith(github.event.pull_request.head.ref, 'major/') ||
-        startsWith(github.event.pull_request.head.ref, 'minor/') ||
-        startsWith(github.event.pull_request.head.ref, 'patch/') ||
-        startsWith(github.event.pull_request.head.ref, 'dependabot/')
-      )
-    outputs:
-      version: ${{ steps.bump-version.outputs.version }}
-      branch: ${{ steps.release-branch.outputs.branch }}
+      github.event.pull_request.state == 'open' &&
+      github.event.pull_request.base.ref == 'main'
     steps:
-      - name: Checkout base branch
+      - name: Checkout PR head
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.base.ref }}
+          ref: ${{ github.event.pull_request.head.ref }}
           fetch-depth: 0
 
       - name: Set up Node.js
@@ -86,67 +74,47 @@ jobs:
         with:
           node-version: '18'
 
-      - id: branch-prefix
-        run: echo "prefix=$(echo '${{ github.event.pull_request.head.ref }}' | cut -d '/' -f 1)" >> "$GITHUB_OUTPUT"
-
-      - name: Validate branch prefix
-        run: |
-          prefix='${{ steps.branch-prefix.outputs.prefix }}'
-          echo "branch prefix: $prefix"
-          if [[ "$prefix" != "major" && "$prefix" != "minor" && "$prefix" != "patch" && "$prefix" != "dependabot" ]]; then
-            echo "Branch prefix is not valid. Allowed: major, minor, patch, dependabot."
-            exit 1
-          fi
-
       - name: Setup git
         run: |
           git config --global user.email "${{ secrets.MY_EMAIL }}"
           git config --global user.name "${{ secrets.MY_USERNAME }}"
 
-      - name: Bump version
+      - name: Derive bump from label
+        id: bump-type
+        run: |
+          set -euo pipefail
+          labels='${{ toJson(github.event.pull_request.labels) }}'
+          bump=""
+          for label in $(echo "$labels" | jq -r '.[].name'); do
+            case "$label" in
+              release:major) bump="major" ;;
+              release:minor) bump="minor" ;;
+              release:patch) bump="patch" ;;
+            esac
+          done
+          if [[ -z "$bump" ]]; then
+            echo "Missing release label (release:major|release:minor|release:patch)." >&2
+            exit 1
+          fi
+          echo "bump=$bump" >> "$GITHUB_OUTPUT"
+
+      - name: Bump version with npm
         id: bump-version
         run: |
-          prefix='${{ steps.branch-prefix.outputs.prefix }}'
-          if [[ "$prefix" == "major" ]]; then
-            npm --no-git-tag-version version major
-          elif [[ "$prefix" == "minor" ]]; then
-            npm --no-git-tag-version version minor
-          else
-            npm --no-git-tag-version version patch
-          fi
+          bump='${{ steps.bump-type.outputs.bump }}'
+          npm --no-git-tag-version version "$bump"
           echo "version=$(jq -r '.version' package.json)" >> "$GITHUB_OUTPUT"
       
-      - name: Commit bump
+      - name: Commit version change
         run: |
+          bump='${{ steps.bump-type.outputs.bump }}'
           version='${{ steps.bump-version.outputs.version }}'
           git add package.json package-lock.json
-          git commit -m "chore(release): bump ${{ steps.branch-prefix.outputs.prefix }} version to $version"
+          git commit -m "chore(release): bump $bump to $version"
 
-      - name: Push release branch
-        id: release-branch
+      - name: Push changes to PR branch
         run: |
-          version='${{ steps.bump-version.outputs.version }}'
-          branch="release/$version"
-          # -B recreates or resets the branch so we can keep reusing the same
-          # release branch if it already exists remotely.
-          git checkout -B "$branch"
-          git push --force origin "$branch"
-          echo "branch=$branch" >> "$GITHUB_OUTPUT"
-
-      - name: Open release PR
-        uses: peter-evans/create-pull-request@v5
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ steps.release-branch.outputs.branch }}
-          base: ${{ github.event.pull_request.base.ref }}
-          title: "chore(release): bump ${{ steps.branch-prefix.outputs.prefix }} version to ${{ steps.bump-version.outputs.version }}"
-          body: |
-            Automated release PR created after merge.
-
-            - prefix: ${{ steps.branch-prefix.outputs.prefix }}
-            - version: ${{ steps.bump-version.outputs.version }}
-          labels: release
-          draft: false
+          git push origin HEAD:"${{ github.event.pull_request.head.ref }}" --force-with-lease
 
   # -----------------------------
   # On push to main: release + publish if version changed
