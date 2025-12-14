@@ -58,7 +58,19 @@ jobs:
   # -----------------------------
   bump-and-open-release-pr:
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true
+    # Only run for merged PRs whose head branches are our bump prefixes,
+    # skip the release/* PR to avoid looping.
+    if: >
+      github.event_name == 'pull_request' &&
+      github.event.action == 'closed' &&
+      github.event.pull_request.merged == true &&
+      !startsWith(github.event.pull_request.head.ref, 'release/') &&
+      (
+        startsWith(github.event.pull_request.head.ref, 'major/') ||
+        startsWith(github.event.pull_request.head.ref, 'minor/') ||
+        startsWith(github.event.pull_request.head.ref, 'patch/') ||
+        startsWith(github.event.pull_request.head.ref, 'dependabot/')
+      )
     outputs:
       version: ${{ steps.bump-version.outputs.version }}
       branch: ${{ steps.release-branch.outputs.branch }}
@@ -115,8 +127,10 @@ jobs:
         run: |
           version='${{ steps.bump-version.outputs.version }}'
           branch="release/$version"
-          git checkout -b "$branch"
-          git push origin "$branch"
+          # -B recreates or resets the branch so we can keep reusing the same
+          # release branch if it already exists remotely.
+          git checkout -B "$branch"
+          git push --force origin "$branch"
           echo "branch=$branch" >> "$GITHUB_OUTPUT"
 
       - name: Open release PR
