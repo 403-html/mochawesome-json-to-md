@@ -1,6 +1,7 @@
 /** @type {import('jest').Config} */
-module.exports = {
+export default {
   testMatch: ['**/tests/**/*.test.js'],
   clearMocks: true,
   collectCoverageFrom: ['index.js'],
+  testEnvironment: 'node',
 };
