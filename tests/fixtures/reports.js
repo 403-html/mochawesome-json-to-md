@@ -118,8 +118,4 @@ const nestedReport = {
   ],
 };
 
-module.exports = {
-  multiReport,
-  nestedReport,
-  singleOutcomeReport,
-};
+export { multiReport, nestedReport, singleOutcomeReport };

@@ -1,9 +1,10 @@
-const fs = require('fs');
-const os = require('os');
-const path = require('path');
-const { execFileSync } = require('child_process');
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
+import { execFileSync } from 'child_process';
+import { fileURLToPath } from 'url';
 
-const {
+import {
   collectTestsByType,
   convertMochaToMarkdown,
   extractTestResultsInfo,
@@ -11,8 +12,18 @@ const {
   runCli,
   validateCliOptions,
   validateTestResultsSchema,
-} = require('../index');
-const { multiReport, nestedReport, singleOutcomeReport } = require('./fixtures/reports');
+} from '../index.js';
+import { multiReport, nestedReport, singleOutcomeReport } from './fixtures/reports.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const tempDirsToCleanup = [];
+
+const trackDir = (dirPath) => {
+  tempDirsToCleanup.push(dirPath);
+  return dirPath;
+};
 
 const writeTempFile = (dir, name, contents) => {
   const filePath = path.join(dir, name);
@@ -20,7 +31,27 @@ const writeTempFile = (dir, name, contents) => {
   return filePath;
 };
 
-const createTempDir = () => fs.mkdtempSync(path.join(os.tmpdir(), 'mocha-md-'));
+const createTempDir = () => trackDir(fs.mkdtempSync(path.join(os.tmpdir(), 'mocha-md-')));
+
+const setupLinkedBin = () => {
+  const installDir = createTempDir();
+  const binDir = path.join(installDir, 'node_modules', '.bin');
+  fs.mkdirSync(binDir, { recursive: true });
+  const binPath = path.join(binDir, 'mochawesome-json-to-md');
+  fs.symlinkSync(path.join(__dirname, '..', 'index.js'), binPath);
+  return { binPath, installDir };
+};
+
+afterEach(() => {
+  while (tempDirsToCleanup.length) {
+    const dir = tempDirsToCleanup.pop();
+    try {
+      fs.rmSync(dir, { recursive: true, force: true });
+    } catch (error) {
+      // best-effort cleanup
+    }
+  }
+});
 
 describe('readJsonFile', () => {
   it('reads and parses JSON content', () => {
@@ -258,5 +289,20 @@ describe('CLI invocation', () => {
 
     const rendered = fs.readFileSync(outputPath, 'utf-8');
     expect(rendered).toContain('RunCli Title');
+  });
+
+  it('runs via locally linked bin in an isolated temp install', () => {
+    const { binPath, installDir } = setupLinkedBin();
+    const reportPath = writeTempFile(installDir, 'report.json', JSON.stringify(singleOutcomeReport));
+    const templatePath = writeTempFile(installDir, 'template.md', '# {{title}}');
+    const outputPath = path.join(installDir, 'out', 'report.md');
+
+    execFileSync(binPath, ['-p', reportPath, '-t', templatePath, '-o', outputPath, '-T', 'Isolated Title'], {
+      cwd: installDir,
+      stdio: 'ignore',
+    });
+
+    const rendered = fs.readFileSync(outputPath, 'utf-8');
+    expect(rendered).toContain('Isolated Title');
   });
 });

@@ -8,12 +8,12 @@
   },
   "scripts": {
     "eslint": "eslint --ext .js ./",
-    "test": "jest",
-    "test:coverage": "jest --coverage",
+    "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js",
+    "test:coverage": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --coverage",
     "format": "prettier --write \"**/*.{js,md,json,cjs}\"",
     "lint:md": "markdownlint \"**/*.md\""
   },
-  "type": "commonjs",
+  "type": "module",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/403-html/mochawesome-json-to-md.git"
