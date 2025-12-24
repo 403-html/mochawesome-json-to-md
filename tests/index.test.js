@@ -1,6 +1,7 @@
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
+import assert from 'node:assert/strict';
 import { execFileSync } from 'child_process';
 import { fileURLToPath } from 'url';
 
@@ -60,101 +61,124 @@ describe('readJsonFile', () => {
 
     const parsed = readJsonFile(fixturePath);
 
-    expect(parsed).toEqual(singleOutcomeReport);
+    assert.deepStrictEqual(parsed, singleOutcomeReport);
   });
 });
 
 describe('validateTestResultsSchema', () => {
   it('passes through valid results and stats objects', () => {
     const validated = validateTestResultsSchema(singleOutcomeReport);
-    expect(validated.results).toBe(singleOutcomeReport.results);
-    expect(validated.stats).toBe(singleOutcomeReport.stats);
+    assert.strictEqual(validated.results, singleOutcomeReport.results);
+    assert.strictEqual(validated.stats, singleOutcomeReport.stats);
   });
 
   it('throws when input is not an object', () => {
-    expect(() => validateTestResultsSchema(null)).toThrow('must be an object');
+    assert.throws(() => validateTestResultsSchema(null), /must be an object/);
   });
 
   it('throws when results is missing', () => {
-    expect(() => validateTestResultsSchema({ stats: singleOutcomeReport.stats })).toThrow(
-      '"results" array'
+    assert.throws(
+      () => validateTestResultsSchema({ stats: singleOutcomeReport.stats }),
+      /"results" array/
     );
   });
 
   it('throws when stats is missing or incomplete', () => {
-    expect(() => validateTestResultsSchema({ results: [], stats: null })).toThrow('"stats" object');
-    expect(() =>
-      validateTestResultsSchema({ results: [], stats: { start: 'x', duration: 1, tests: 1 } })
-    ).toThrow('Stats missing required field "other"');
+    assert.throws(
+      () => validateTestResultsSchema({ results: [], stats: null }),
+      /"stats" object/
+    );
+    assert.throws(
+      () =>
+        validateTestResultsSchema({ results: [], stats: { start: 'x', duration: 1, tests: 1 } }),
+      /Stats missing required field "other"/
+    );
   });
 });
 
 describe('collectTestsByType', () => {
   it('returns all tests of the requested type with paths', () => {
     const passes = collectTestsByType({ type: 'passes', suiteList: singleOutcomeReport.results });
-    expect(passes).toHaveLength(1);
-    expect(passes[0]).toMatchObject({ uuid: 'p-1', path: '/tests/suite-a.js' });
+    assert.strictEqual(passes.length, 1);
+    assert.strictEqual(passes[0].uuid, 'p-1');
+    assert.strictEqual(passes[0].path, '/tests/suite-a.js');
   });
 
   it('handles nested suites', () => {
     const pending = collectTestsByType({ type: 'pending', suiteList: nestedReport.results });
     const skipped = collectTestsByType({ type: 'skipped', suiteList: nestedReport.results });
-    expect(pending.map((t) => t.uuid)).toEqual(['deep-pending']);
-    expect(skipped.map((t) => t.uuid)).toEqual(['deep-skipped']);
+    assert.deepStrictEqual(
+      pending.map((t) => t.uuid),
+      ['deep-pending']
+    );
+    assert.deepStrictEqual(
+      skipped.map((t) => t.uuid),
+      ['deep-skipped']
+    );
   });
 
   it('throws when a uuid is referenced but not found', () => {
-    expect(() =>
-      collectTestsByType({
-        type: 'passes',
-        suiteList: [
-          {
-            file: 'file.js',
-            passes: ['missing-uuid'],
-            failures: [],
-            pending: [],
-            skipped: [],
-            suites: [],
-            tests: [],
-          },
-        ],
-      })
-    ).toThrow('missing-uuid');
+    assert.throws(
+      () =>
+        collectTestsByType({
+          type: 'passes',
+          suiteList: [
+            {
+              file: 'file.js',
+              passes: ['missing-uuid'],
+              failures: [],
+              pending: [],
+              skipped: [],
+              suites: [],
+              tests: [],
+            },
+          ],
+        }),
+      /missing-uuid/
+    );
   });
 });
 
 describe('extractTestResultsInfo', () => {
   it('summarizes a single report across all outcome types', () => {
     const summary = extractTestResultsInfo(singleOutcomeReport);
-    expect(summary).toMatchObject({
-      passedTestsCount: 1,
-      failedTestsCount: 1,
-      skippedTestsCount: 1,
-      skippedOtherTestsCount: 1,
-      passedExists: true,
-      failedExists: true,
-      skippedExists: true,
-      skippedOtherExists: true,
-    });
+    assert.strictEqual(summary.passedTestsCount, 1);
+    assert.strictEqual(summary.failedTestsCount, 1);
+    assert.strictEqual(summary.skippedTestsCount, 1);
+    assert.strictEqual(summary.skippedOtherTestsCount, 1);
+    assert.strictEqual(summary.passedExists, true);
+    assert.strictEqual(summary.failedExists, true);
+    assert.strictEqual(summary.skippedExists, true);
+    assert.strictEqual(summary.skippedOtherExists, true);
   });
 
   it('aggregates multiple report entries', () => {
     const summary = extractTestResultsInfo(multiReport);
-    expect(summary).toMatchObject({
-      passedTestsCount: 2,
-      failedTestsCount: 1,
-      skippedTestsCount: 1,
-      skippedOtherTestsCount: 1,
-      totalTests: 6,
-    });
-    expect(summary.passedTests.map((t) => t.uuid)).toEqual(['p-2', 'p-3']);
+    assert.strictEqual(summary.passedTestsCount, 2);
+    assert.strictEqual(summary.failedTestsCount, 1);
+    assert.strictEqual(summary.skippedTestsCount, 1);
+    assert.strictEqual(summary.skippedOtherTestsCount, 1);
+    assert.strictEqual(summary.totalTests, 6);
+    assert.deepStrictEqual(
+      summary.passedTests.map((t) => t.uuid),
+      ['p-2', 'p-3']
+    );
   });
 
   it('captures nested suite tests', () => {
     const summary = extractTestResultsInfo(nestedReport);
-    expect(summary.skippedTests.map((t) => t.uuid)).toEqual(['deep-pending']);
-    expect(summary.skippedOtherTests.map((t) => t.uuid)).toEqual(['deep-skipped']);
-    expect(summary.failedTests.map((t) => t.uuid)).toEqual(['child-fail']);
+    assert.deepStrictEqual(
+      summary.skippedTests.map((t) => t.uuid),
+      ['deep-pending']
+    );
+    assert.deepStrictEqual(
+      summary.skippedOtherTests.map((t) => t.uuid),
+      ['deep-skipped']
+    );
+    assert.deepStrictEqual(
+      summary.failedTests.map((t) => t.uuid),
+      ['child-fail']
+    );
   });
 });
 
@@ -163,13 +187,13 @@ describe('validateCliOptions', () => {
     const dir = createTempDir();
     const reportPath = writeTempFile(dir, 'report.json', '{}');
     const templatePath = writeTempFile(dir, 'template.md', '# template');
-    expect(() =>
+    assert.doesNotThrow(() =>
       validateCliOptions({
         path: reportPath,
         output: path.join(dir, 'out.md'),
         template: templatePath,
       })
-    ).not.toThrow();
+    );
   });
 
   it('rejects empty paths, missing files, and non-file inputs', () => {
@@ -177,25 +201,30 @@ describe('validateCliOptions', () => {
     const templatePath = writeTempFile(dir, 'template.md', '# template');
     const dirPath = fs.mkdtempSync(path.join(dir, 'dir-'));
 
-    expect(() =>
-      validateCliOptions({ path: '', output: 'out.md', template: templatePath })
-    ).toThrow('non-empty string');
+    assert.throws(
+      () => validateCliOptions({ path: '', output: 'out.md', template: templatePath }),
+      /non-empty string/
+    );
 
-    expect(() =>
-      validateCliOptions({
-        path: path.join(dir, 'missing.json'),
-        output: 'out.md',
-        template: templatePath,
-      })
-    ).toThrow('not accessible');
+    assert.throws(
+      () =>
+        validateCliOptions({
+          path: path.join(dir, 'missing.json'),
+          output: 'out.md',
+          template: templatePath,
+        }),
+      /not accessible/
+    );
 
-    expect(() =>
-      validateCliOptions({ path: dirPath, output: 'out.md', template: templatePath })
-    ).toThrow('is not a file');
+    assert.throws(
+      () => validateCliOptions({ path: dirPath, output: 'out.md', template: templatePath }),
+      /is not a file/
+    );
 
-    expect(() =>
-      validateCliOptions({ path: templatePath, output: ' ', template: templatePath })
-    ).toThrow('Output path must be a non-empty string');
+    assert.throws(
+      () => validateCliOptions({ path: templatePath, output: ' ', template: templatePath }),
+      /Output path must be a non-empty string/
+    );
   });
 });
 
@@ -219,10 +248,10 @@ describe('convertMochaToMarkdown', () => {
     });
 
     const output = fs.readFileSync(outputPath, 'utf-8');
-    expect(output).toContain('Report Title');
-    expect(output).toContain('Passed: 1');
-    expect(output).toContain('Failed: 1');
-    expect(output).toContain('Other skipped: 1');
+    assert.ok(output.includes('Report Title'));
+    assert.ok(output.includes('Passed: 1'));
+    assert.ok(output.includes('Failed: 1'));
+    assert.ok(output.includes('Other skipped: 1'));
   });
 
   it('sets exit code on failure and does not throw', () => {
@@ -235,7 +264,7 @@ describe('convertMochaToMarkdown', () => {
       title: 'Title',
       verbose: false,
     });
-    expect(process.exitCode).toBe(1);
+    assert.strictEqual(process.exitCode, 1);
     process.exitCode = originalExitCode;
   });
 });
@@ -244,7 +273,7 @@ describe('readJsonFile errors', () => {
   it('throws on invalid JSON content', () => {
     const dir = createTempDir();
     const badPath = writeTempFile(dir, 'bad.json', '{invalid}');
-    expect(() => readJsonFile(badPath)).toThrow('Error while parsing JSON file');
+    assert.throws(() => readJsonFile(badPath), /Error while parsing JSON file/);
   });
 });
 
@@ -265,7 +294,7 @@ describe('CLI invocation', () => {
     );
 
     const rendered = fs.readFileSync(outputPath, 'utf-8');
-    expect(rendered).toContain('CLI Title');
+    assert.ok(rendered.includes('CLI Title'));
   });
 
   it('runs through runCli helper with provided argv', () => {
@@ -288,7 +317,7 @@ describe('CLI invocation', () => {
     ]);
 
     const rendered = fs.readFileSync(outputPath, 'utf-8');
-    expect(rendered).toContain('RunCli Title');
+    assert.ok(rendered.includes('RunCli Title'));
   });
 
   it('runs via locally linked bin in an isolated temp install', () => {
@@ -303,6 +332,6 @@ describe('CLI invocation', () => {
     });
 
     const rendered = fs.readFileSync(outputPath, 'utf-8');
-    expect(rendered).toContain('Isolated Title');
+    assert.ok(rendered.includes('Isolated Title'));
   });
 });
