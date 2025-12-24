@@ -100,7 +100,8 @@ Singular tags will be replaced with the value of the tag.
 | ---------------------------- | --------------------------------------------------- |
 | `{{title}}`                  | Title of the report                                 |
 | `{{startDate}}`              | Start date of the test run                          |
-| `{{duration}}`               | Duration of the test run in seconds                 |
+| `{{duration}}`               | Duration of the test run in milliseconds            |
+| `{{durationSeconds}}`        | Duration of the test run in seconds                 |
 | `{{totalTests}}`             | Total number of tests                               |
 | `{{passedTestsCount}}`       | Number of passed tests                              |
 | `{{failedTestsCount}}`       | Number of failed tests                              |

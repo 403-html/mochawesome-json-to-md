@@ -40,6 +40,7 @@ export const extractTestResultsInfo = ({ results, stats }) => {
   return {
     startDate,
     duration,
+    durationSeconds: duration / 1000,
     passedTestsCount: passedTests.length,
     failedTestsCount: failedTests.length,
     skippedTestsCount: skippedTests.length,
