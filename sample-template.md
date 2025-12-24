@@ -1,7 +1,7 @@
 # {{title}}
 
 > Run start date: {{startDate}}
-> Duration: {{duration}}s
+> Duration: {{durationSeconds}}s
 
 ## Tests run stats
 
@@ -21,6 +21,7 @@
 <article>
   {{#passedTests}}
   ✔️ - Path: {{path}}, test: {{title}}
+
   {{/passedTests}}
 </article>
 </details>
@@ -33,7 +34,8 @@
 <details>
 <summary>Click to reveal</summary>
 <article>
-  {{#failedTests}}💢 - Path: {{path}}, test: {{title}}
+  {{#failedTests}}
+  💢 - Path: {{path}}, test: {{title}}
 
 ```diff
   {{err.message}}
@@ -52,7 +54,10 @@
 <details>
 <summary>Click to reveal</summary>
 <article>
-  {{#skippedTests}}🔜 - Path: {{path}}, test: {{title}}{{/skippedTests}}
+  {{#skippedTests}}
+  🔜 - Path: {{path}}, test: {{title}}
+
+  {{/skippedTests}}
 </article>
 </details>
 {{/skippedExists}}
@@ -64,7 +69,10 @@
 <details>
 <summary>Click to reveal</summary>
 <article>
-  {{#skippedOtherTests}}⚠️ - Path: {{path}}, test: {{title}}{{/skippedOtherTests}}
+  {{#skippedOtherTests}}
+  ⚠️ - Path: {{path}}, test: {{title}}
+
+  {{/skippedOtherTests}}
 </article>
 </details>
 {{/skippedOtherExists}}

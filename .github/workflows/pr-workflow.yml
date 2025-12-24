@@ -10,6 +10,10 @@ permissions:
   contents: write
   pull-requests: write
 
+concurrency:
+  group: pr-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   # -----------------------------
   # PR validation
@@ -86,17 +90,32 @@ jobs:
           ref: ${{ github.event.pull_request.head.ref }}
           fetch-depth: 0
 
+      - name: Check for existing bump commit
+        id: bump-guard
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          base="$(git merge-base HEAD origin/main)"
+          if git log --pretty=%s "${base}..HEAD" | grep -q '^chore(release): bump '; then
+            echo "already_bumped=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "already_bumped=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Set up Node.js
+        if: steps.bump-guard.outputs.already_bumped != 'true'
         uses: actions/setup-node@v4
         with:
           node-version: '18'
 
       - name: Setup git
+        if: steps.bump-guard.outputs.already_bumped != 'true'
         run: |
           git config --global user.email "${{ secrets.MY_EMAIL }}"
           git config --global user.name "${{ secrets.MY_USERNAME }}"
 
       - name: Derive bump from label
+        if: steps.bump-guard.outputs.already_bumped != 'true'
         id: bump-type
         run: |
           set -euo pipefail
@@ -116,6 +135,7 @@ jobs:
           echo "bump=$bump" >> "$GITHUB_OUTPUT"
 
       - name: Bump version with npm
+        if: steps.bump-guard.outputs.already_bumped != 'true'
         id: bump-version
         run: |
           bump='${{ steps.bump-type.outputs.bump }}'
@@ -123,13 +143,21 @@ jobs:
           echo "version=$(jq -r '.version' package.json)" >> "$GITHUB_OUTPUT"
       
       - name: Commit version change
+        if: steps.bump-guard.outputs.already_bumped != 'true'
         run: |
           bump='${{ steps.bump-type.outputs.bump }}'
           version='${{ steps.bump-version.outputs.version }}'
           git add package.json package-lock.json
           git commit -m "chore(release): bump $bump to $version"
 
+      - name: Rebase onto remote head
+        if: steps.bump-guard.outputs.already_bumped != 'true'
+        run: |
+          git fetch origin "${{ github.event.pull_request.head.ref }}"
+          git rebase "origin/${{ github.event.pull_request.head.ref }}"
+
       - name: Push changes to PR branch
+        if: steps.bump-guard.outputs.already_bumped != 'true'
         run: |
           git push origin HEAD:"${{ github.event.pull_request.head.ref }}" --force-with-lease
 

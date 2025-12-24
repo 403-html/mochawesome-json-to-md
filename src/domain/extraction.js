@@ -40,6 +40,7 @@ export const extractTestResultsInfo = ({ results, stats }) => {
   return {
     startDate,
     duration,
+    durationSeconds: Math.round((duration / 1000) * 100) / 100,
     passedTestsCount: passedTests.length,
     failedTestsCount: failedTests.length,
     skippedTestsCount: skippedTests.length,
