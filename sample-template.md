@@ -11,7 +11,6 @@
 - 🔜 skipped: {{skippedTestsCount}}
 - ⚠️ other skipped tests: {{skippedOtherTestsCount}}
 - ❇️ other: {{otherTestsCount}}
-
 {{#passedExists}}
 
 ## Passed tests
@@ -19,14 +18,11 @@
 <details>
 <summary>Click to reveal</summary>
 <article>
-  {{#passedTests}}
-  ✔️ - Path: {{path}}, test: {{title}}
-
-  {{/passedTests}}
+{{#passedTests}}✔️ - Path: {{path}}, test: {{title}}
+{{/passedTests}}
 </article>
 </details>
 {{/passedExists}}
-
 {{#failedExists}}
 
 ## Failed tests
@@ -34,8 +30,7 @@
 <details>
 <summary>Click to reveal</summary>
 <article>
-  {{#failedTests}}
-  💢 - Path: {{path}}, test: {{title}}
+{{#failedTests}}💢 - Path: {{path}}, test: {{title}}
 
 ```diff
   {{err.message}}
@@ -46,7 +41,6 @@
 </article>
 </details>
 {{/failedExists}}
-
 {{#skippedExists}}
 
 ## Skipped tests
@@ -54,14 +48,11 @@
 <details>
 <summary>Click to reveal</summary>
 <article>
-  {{#skippedTests}}
-  🔜 - Path: {{path}}, test: {{title}}
-
-  {{/skippedTests}}
+{{#skippedTests}}🔜 - Path: {{path}}, test: {{title}}
+{{/skippedTests}}
 </article>
 </details>
 {{/skippedExists}}
-
 {{#skippedOtherExists}}
 
 ## Other skipped tests
@@ -69,10 +60,8 @@
 <details>
 <summary>Click to reveal</summary>
 <article>
-  {{#skippedOtherTests}}
-  ⚠️ - Path: {{path}}, test: {{title}}
-
-  {{/skippedOtherTests}}
+{{#skippedOtherTests}}⚠️ - Path: {{path}}, test: {{title}}
+{{/skippedOtherTests}}
 </article>
 </details>
 {{/skippedOtherExists}}
