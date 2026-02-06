@@ -279,18 +279,15 @@ describe('convertMochaToMarkdown', () => {
     assert.ok(logs.some((message) => message.includes('Reading JSON file')));
   });
 
-  it('sets exit code on failure and does not throw', () => {
-    const originalExitCode = process.exitCode;
-    process.exitCode = 0;
-    convertMochaToMarkdown({
+  it('returns false on failure and does not throw', () => {
+    const result = convertMochaToMarkdown({
       path: 'missing.json',
       template: 'missing.md',
       output: 'out.md',
       title: 'Title',
       verbose: false,
     });
-    assert.strictEqual(process.exitCode, 1);
-    process.exitCode = originalExitCode;
+    assert.strictEqual(result, false);
   });
 });
 
@@ -343,6 +340,16 @@ describe('CLI invocation', () => {
 
     const rendered = fs.readFileSync(outputPath, 'utf-8');
     assert.ok(rendered.includes('RunCli Title'));
+  });
+
+  it('sets exit code when runCli encounters an error', () => {
+    const originalExitCode = process.exitCode;
+    process.exitCode = 0;
+
+    runCli(['node', 'index.js', '-p', 'missing.json', '-t', 'missing.md', '-o', 'out.md']);
+
+    assert.strictEqual(process.exitCode, 1);
+    process.exitCode = originalExitCode;
   });
 
   it('runs via locally linked bin in an isolated temp install', () => {

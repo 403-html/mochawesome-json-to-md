@@ -47,9 +47,10 @@ const convertMochaToMarkdown = (options) => {
 
     logger.info(`Writing markdown to: ${output}`);
     fs.writeFileSync(output, renderedMarkdown);
+    return true;
   } catch (error) {
     logger.error(error.message);
-    process.exitCode = 1;
+    return false;
   }
 };
 

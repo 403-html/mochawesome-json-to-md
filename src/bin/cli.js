@@ -26,7 +26,10 @@ const configureProgram = () => {
 
 const runCli = (argv = process.argv) => {
   configureProgram().parse(argv);
-  convertMochaToMarkdown(program.opts());
+  const succeeded = convertMochaToMarkdown(program.opts());
+  if (!succeeded) {
+    process.exitCode = 1;
+  }
 };
 
 export { configureProgram, runCli };

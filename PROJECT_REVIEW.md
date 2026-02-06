@@ -53,3 +53,10 @@ Date: 2026-02-06
    - **Why it helps:** Keeps tooling lean and avoids confusion.
    - **Risk level:** Low.
    - **Recommendation:** Optional.
+
+## Applied fixes
+
+- Logger creation now happens per conversion, with optional injection.
+- CLI is responsible for setting `process.exitCode` on failures.
+- `test:coverage` script renamed to `test:reports` to reflect test-only behavior.
+- Removed unused `@typescript-eslint/*` dev dependencies.
