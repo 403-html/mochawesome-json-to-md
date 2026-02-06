@@ -29,12 +29,12 @@ jobs:
       - id: branch-prefix
         run: echo "prefix=$(echo '${{ github.event.pull_request.head.ref }}' | cut -d '/' -f 1)" >> "$GITHUB_OUTPUT"
 
-      - name: Check branch prefix (major/minor/patch/dependabot)
+      - name: Check branch prefix (major/minor/patch/dependabot/copilot)
         run: |
           prefix='${{ steps.branch-prefix.outputs.prefix }}'
           echo "branch prefix: $prefix"
-          if [[ "$prefix" != "major" && "$prefix" != "minor" && "$prefix" != "patch" && "$prefix" != "dependabot" ]]; then
-            echo "Branch prefix is not valid. Allowed: major, minor, patch, dependabot."
+          if [[ "$prefix" != "major" && "$prefix" != "minor" && "$prefix" != "patch" && "$prefix" != "dependabot" && "$prefix" != "copilot" ]]; then
+            echo "Branch prefix is not valid. Allowed: major, minor, patch, dependabot, copilot."
             exit 1
           fi
 

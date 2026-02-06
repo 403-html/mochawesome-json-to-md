@@ -254,18 +254,40 @@ describe('convertMochaToMarkdown', () => {
     assert.ok(output.includes('Other skipped: 1'));
   });
 
-  it('sets exit code on failure and does not throw', () => {
-    const originalExitCode = process.exitCode;
-    process.exitCode = 0;
+  it('uses the provided logger instance', () => {
+    const dir = createTempDir();
+    const reportPath = writeTempFile(dir, 'report.json', JSON.stringify(singleOutcomeReport));
+    const templatePath = writeTempFile(dir, 'template.md', '# {{title}}');
+    const outputPath = path.join(dir, 'out', 'report.md');
+    const logs = [];
+    const logger = {
+      info: (message) => logs.push(message),
+      error: (message) => logs.push(`error:${message}`),
+      debug: (message) => logs.push(`debug:${message}`),
+    };
+
     convertMochaToMarkdown({
+      path: reportPath,
+      template: templatePath,
+      output: outputPath,
+      title: 'Logged Title',
+      verbose: true,
+      logger,
+    });
+
+    assert.ok(logs.some((message) => message.includes('Starting Mocha to Markdown conversion')));
+    assert.ok(logs.some((message) => message.includes('Reading JSON file')));
+  });
+
+  it('returns false on failure and does not throw', () => {
+    const result = convertMochaToMarkdown({
       path: 'missing.json',
       template: 'missing.md',
       output: 'out.md',
       title: 'Title',
       verbose: false,
     });
-    assert.strictEqual(process.exitCode, 1);
-    process.exitCode = originalExitCode;
+    assert.strictEqual(result, false);
   });
 });
 
@@ -318,6 +340,16 @@ describe('CLI invocation', () => {
 
     const rendered = fs.readFileSync(outputPath, 'utf-8');
     assert.ok(rendered.includes('RunCli Title'));
+  });
+
+  it('sets exit code when runCli encounters an error', () => {
+    const originalExitCode = process.exitCode;
+    process.exitCode = 0;
+
+    runCli(['node', 'index.js', '-p', 'missing.json', '-t', 'missing.md', '-o', 'out.md']);
+
+    assert.strictEqual(process.exitCode, 1);
+    process.exitCode = originalExitCode;
   });
 
   it('runs via locally linked bin in an isolated temp install', () => {
