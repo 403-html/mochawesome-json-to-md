@@ -254,6 +254,31 @@ describe('convertMochaToMarkdown', () => {
     assert.ok(output.includes('Other skipped: 1'));
   });
 
+  it('uses the provided logger instance', () => {
+    const dir = createTempDir();
+    const reportPath = writeTempFile(dir, 'report.json', JSON.stringify(singleOutcomeReport));
+    const templatePath = writeTempFile(dir, 'template.md', '# {{title}}');
+    const outputPath = path.join(dir, 'out', 'report.md');
+    const logs = [];
+    const logger = {
+      info: (message) => logs.push(message),
+      error: (message) => logs.push(`error:${message}`),
+      debug: (message) => logs.push(`debug:${message}`),
+    };
+
+    convertMochaToMarkdown({
+      path: reportPath,
+      template: templatePath,
+      output: outputPath,
+      title: 'Logged Title',
+      verbose: true,
+      logger,
+    });
+
+    assert.ok(logs.some((message) => message.includes('Starting Mocha to Markdown conversion')));
+    assert.ok(logs.some((message) => message.includes('Reading JSON file')));
+  });
+
   it('sets exit code on failure and does not throw', () => {
     const originalExitCode = process.exitCode;
     process.exitCode = 0;

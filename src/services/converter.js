@@ -8,13 +8,7 @@ import { extractTestResultsInfo } from '../domain/extraction.js';
 import { validateTestResultsSchema } from '../domain/schema.js';
 import { readJsonFile } from './report-reader.js';
 
-let logger = createLogger(false);
-
-const setLogger = (nextLogger) => {
-  logger = nextLogger;
-};
-
-const ensureOutputDirectory = (outputPath) => {
+const ensureOutputDirectory = (outputPath, logger) => {
   const outputDir = path.dirname(outputPath);
   logger.info(`Ensuring output directory: ${outputDir}`);
   if (!fs.existsSync(outputDir)) {
@@ -22,7 +16,7 @@ const ensureOutputDirectory = (outputPath) => {
   }
 };
 
-const renderMarkdown = ({ templatePath, templateArgs }) => {
+const renderMarkdown = ({ templatePath, templateArgs, logger }) => {
   logger.info(`Reading template file: ${templatePath}`);
   const templateContent = fs.readFileSync(templatePath, 'utf-8');
 
@@ -31,8 +25,8 @@ const renderMarkdown = ({ templatePath, templateArgs }) => {
 };
 
 const convertMochaToMarkdown = (options) => {
-  const { path: reportPath, output, template, title, verbose } = options;
-  setLogger(createLogger(Boolean(verbose)));
+  const { path: reportPath, output, template, title, verbose, logger: customLogger } = options;
+  const logger = customLogger ?? createLogger(Boolean(verbose));
   try {
     validateCliOptions({ path: reportPath, output, template });
 
@@ -46,9 +40,10 @@ const convertMochaToMarkdown = (options) => {
     const renderedMarkdown = renderMarkdown({
       templatePath: template,
       templateArgs: { ...extractedInfo, title },
+      logger,
     });
 
-    ensureOutputDirectory(output);
+    ensureOutputDirectory(output, logger);
 
     logger.info(`Writing markdown to: ${output}`);
     fs.writeFileSync(output, renderedMarkdown);
