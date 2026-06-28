@@ -39,7 +39,7 @@
   "devDependencies": {
     "eslint": "^8.57.1",
     "lefthook": "^1.5.2",
-    "markdownlint-cli": "^0.47.0",
+    "markdownlint-cli": "^0.49.0",
     "mocha": "^11.7.5",
     "mochawesome": "^7.1.4",
     "prettier": "^3.7.4"
