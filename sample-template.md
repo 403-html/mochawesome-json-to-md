@@ -6,6 +6,7 @@
 ## Tests run stats
 
 - 📚 total tests: {{totalTests}}
+- 📈 pass rate: {{passRate}}%
 - ✔️ passed: {{passedTestsCount}}
 - ❌ failed: {{failedTestsCount}}
 - 🔜 skipped: {{skippedTestsCount}}
@@ -22,7 +23,7 @@
   {{#passedTests}}
   ✔️ - Path: {{path}}, test: {{title}}
 
-  {{/passedTests}}
+{{/passedTests}}
 </article>
 </details>
 {{/passedExists}}
@@ -57,7 +58,7 @@
   {{#skippedTests}}
   🔜 - Path: {{path}}, test: {{title}}
 
-  {{/skippedTests}}
+{{/skippedTests}}
 </article>
 </details>
 {{/skippedExists}}
@@ -72,7 +73,7 @@
   {{#skippedOtherTests}}
   ⚠️ - Path: {{path}}, test: {{title}}
 
-  {{/skippedOtherTests}}
+{{/skippedOtherTests}}
 </article>
 </details>
 {{/skippedOtherExists}}

@@ -16,6 +16,10 @@ const configureProgram = () => {
       './sample-template.md'
     )
     .option('-T, --title <title>', 'Specify the title for the report', 'Test Report')
+    .option(
+      '-f, --fail-on-failures',
+      'Exit with a non-zero code if the report contains failed tests'
+    )
     .option('-v, --verbose', 'Enable verbose mode for debug logging')
     .usage('$0 -p file/path.json [options]')
     .addHelpText(

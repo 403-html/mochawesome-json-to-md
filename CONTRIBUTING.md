@@ -40,7 +40,7 @@ For example:
 When creating a pull request (PR) or committing code changes, please use the following prefixes to indicate the type of change:
 
 - `feat:` for new features (`feat!:` for breaking changes)
-- `bug:` for bug fixes
+- `fix:` for bug fixes
 - `docs:` for documentation only changes (e.g. `CONTRIBUTING.md` or `README.md`)
 - `chore:` for changes that do not affect the meaning of the code (e.g. build process or package manager updates)
 - `misc:` for changes that do not fit into any of the above categories

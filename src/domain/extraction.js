@@ -36,11 +36,13 @@ export const extractTestResultsInfo = ({ results, stats }) => {
   );
 
   const [passedTests, failedTests, skippedTests, skippedOtherTests] = categorizedTests;
+  const passRate = totalTests > 0 ? Math.round((passedTests.length / totalTests) * 10000) / 100 : 0;
 
   return {
     startDate,
     duration,
     durationSeconds: Math.round((duration / 1000) * 100) / 100,
+    passRate,
     passedTestsCount: passedTests.length,
     failedTestsCount: failedTests.length,
     skippedTestsCount: skippedTests.length,

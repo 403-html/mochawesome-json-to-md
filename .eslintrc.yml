@@ -42,3 +42,7 @@ overrides:
       - "tests/**/*"
     env:
       jest: true
+    rules:
+      # describe() blocks legitimately grow past the general function-length
+      # limit as coverage increases; the limit stays meaningful for source code.
+      max-lines-per-function: off
