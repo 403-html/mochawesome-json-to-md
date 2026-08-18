@@ -14,7 +14,12 @@ import {
   validateCliOptions,
   validateTestResultsSchema,
 } from '../index.js';
-import { multiReport, nestedReport, singleOutcomeReport } from './fixtures/reports.js';
+import {
+  allPassedReport,
+  multiReport,
+  nestedReport,
+  singleOutcomeReport,
+} from './fixtures/reports.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -84,10 +89,7 @@ describe('validateTestResultsSchema', () => {
   });
 
   it('throws when stats is missing or incomplete', () => {
-    assert.throws(
-      () => validateTestResultsSchema({ results: [], stats: null }),
-      /"stats" object/
-    );
+    assert.throws(() => validateTestResultsSchema({ results: [], stats: null }), /"stats" object/);
     assert.throws(
       () =>
         validateTestResultsSchema({ results: [], stats: { start: 'x', duration: 1, tests: 1 } }),
@@ -146,6 +148,7 @@ describe('extractTestResultsInfo', () => {
     assert.strictEqual(summary.failedTestsCount, 1);
     assert.strictEqual(summary.skippedTestsCount, 1);
     assert.strictEqual(summary.skippedOtherTestsCount, 1);
+    assert.strictEqual(summary.passRate, 25);
     assert.strictEqual(summary.passedExists, true);
     assert.strictEqual(summary.failedExists, true);
     assert.strictEqual(summary.skippedExists, true);
@@ -159,10 +162,19 @@ describe('extractTestResultsInfo', () => {
     assert.strictEqual(summary.skippedTestsCount, 1);
     assert.strictEqual(summary.skippedOtherTestsCount, 1);
     assert.strictEqual(summary.totalTests, 6);
+    assert.strictEqual(summary.passRate, 33.33);
     assert.deepStrictEqual(
       summary.passedTests.map((t) => t.uuid),
       ['p-2', 'p-3']
     );
+  });
+
+  it('reports a passRate of 0 when there are no tests', () => {
+    const summary = extractTestResultsInfo({
+      results: [],
+      stats: { start: '2024-01-01T00:00:00Z', duration: 0, tests: 0, other: 0 },
+    });
+    assert.strictEqual(summary.passRate, 0);
   });
 
   it('captures nested suite tests', () => {
@@ -289,6 +301,43 @@ describe('convertMochaToMarkdown', () => {
     });
     assert.strictEqual(result, false);
   });
+
+  it('returns false when failOnFailures is set and the report has failed tests, but still writes output', () => {
+    const dir = createTempDir();
+    const reportPath = writeTempFile(dir, 'report.json', JSON.stringify(singleOutcomeReport));
+    const templatePath = writeTempFile(dir, 'template.md', '# {{title}}');
+    const outputPath = path.join(dir, 'out', 'report.md');
+
+    const result = convertMochaToMarkdown({
+      path: reportPath,
+      template: templatePath,
+      output: outputPath,
+      title: 'Title',
+      verbose: false,
+      failOnFailures: true,
+    });
+
+    assert.strictEqual(result, false);
+    assert.ok(fs.existsSync(outputPath));
+  });
+
+  it('returns true when failOnFailures is set but the report has no failed tests', () => {
+    const dir = createTempDir();
+    const reportPath = writeTempFile(dir, 'report.json', JSON.stringify(allPassedReport));
+    const templatePath = writeTempFile(dir, 'template.md', '# {{title}}');
+    const outputPath = path.join(dir, 'out', 'report.md');
+
+    const result = convertMochaToMarkdown({
+      path: reportPath,
+      template: templatePath,
+      output: outputPath,
+      title: 'Title',
+      verbose: false,
+      failOnFailures: true,
+    });
+
+    assert.strictEqual(result, true);
+  });
 });
 
 describe('readJsonFile errors', () => {
@@ -352,16 +401,49 @@ describe('CLI invocation', () => {
     process.exitCode = originalExitCode;
   });
 
+  it('sets exit code via runCli when --fail-on-failures is passed and the report has failures', () => {
+    const dir = createTempDir();
+    const reportPath = writeTempFile(dir, 'report.json', JSON.stringify(singleOutcomeReport));
+    const templatePath = writeTempFile(dir, 'template.md', '# {{title}}');
+    const outputPath = path.join(dir, 'out', 'report.md');
+    const originalExitCode = process.exitCode;
+    process.exitCode = 0;
+
+    runCli([
+      'node',
+      'index.js',
+      '-p',
+      reportPath,
+      '-t',
+      templatePath,
+      '-o',
+      outputPath,
+      '--fail-on-failures',
+    ]);
+
+    assert.strictEqual(process.exitCode, 1);
+    assert.ok(fs.existsSync(outputPath));
+    process.exitCode = originalExitCode;
+  });
+
   it('runs via locally linked bin in an isolated temp install', () => {
     const { binPath, installDir } = setupLinkedBin();
-    const reportPath = writeTempFile(installDir, 'report.json', JSON.stringify(singleOutcomeReport));
+    const reportPath = writeTempFile(
+      installDir,
+      'report.json',
+      JSON.stringify(singleOutcomeReport)
+    );
     const templatePath = writeTempFile(installDir, 'template.md', '# {{title}}');
     const outputPath = path.join(installDir, 'out', 'report.md');
 
-    execFileSync(binPath, ['-p', reportPath, '-t', templatePath, '-o', outputPath, '-T', 'Isolated Title'], {
-      cwd: installDir,
-      stdio: 'ignore',
-    });
+    execFileSync(
+      binPath,
+      ['-p', reportPath, '-t', templatePath, '-o', outputPath, '-T', 'Isolated Title'],
+      {
+        cwd: installDir,
+        stdio: 'ignore',
+      }
+    );
 
     const rendered = fs.readFileSync(outputPath, 'utf-8');
     assert.ok(rendered.includes('Isolated Title'));

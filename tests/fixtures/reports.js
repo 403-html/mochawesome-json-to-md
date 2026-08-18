@@ -118,4 +118,24 @@ const nestedReport = {
   ],
 };
 
-export { multiReport, nestedReport, singleOutcomeReport };
+const allPassedReport = {
+  stats: {
+    start: '2024-01-01T00:00:00Z',
+    duration: 1,
+    tests: 1,
+    other: 0,
+  },
+  results: [
+    {
+      file: '/tests/suite-a.js',
+      passes: ['p-1'],
+      failures: [],
+      pending: [],
+      skipped: [],
+      suites: [],
+      tests: [baseTest('p-1', 'pass test', 'pass')],
+    },
+  ],
+};
+
+export { allPassedReport, multiReport, nestedReport, singleOutcomeReport };

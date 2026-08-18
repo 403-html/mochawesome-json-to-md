@@ -25,7 +25,15 @@ const renderMarkdown = ({ templatePath, templateArgs, logger }) => {
 };
 
 const convertMochaToMarkdown = (options) => {
-  const { path: reportPath, output, template, title, verbose, logger: customLogger } = options;
+  const {
+    path: reportPath,
+    output,
+    template,
+    title,
+    verbose,
+    failOnFailures,
+    logger: customLogger,
+  } = options;
   const logger = customLogger ?? createLogger(Boolean(verbose));
   try {
     validateCliOptions({ path: reportPath, output, template });
@@ -47,6 +55,12 @@ const convertMochaToMarkdown = (options) => {
 
     logger.info(`Writing markdown to: ${output}`);
     fs.writeFileSync(output, renderedMarkdown);
+
+    if (failOnFailures && extractedInfo.failedTestsCount > 0) {
+      logger.error(`Report contains ${extractedInfo.failedTestsCount} failed test(s)`);
+      return false;
+    }
+
     return true;
   } catch (error) {
     logger.error(error.message);
