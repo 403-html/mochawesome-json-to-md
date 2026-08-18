@@ -65,7 +65,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22'
 
       - run: npm ci
       - run: npm run eslint
@@ -80,7 +80,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22'
 
       - run: npm ci
       - run: npm test
@@ -121,7 +121,7 @@ jobs:
         if: steps.bump-guard.outputs.already_bumped != 'true'
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22'
 
       - name: Setup git
         if: steps.bump-guard.outputs.already_bumped != 'true'
@@ -242,7 +242,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22'
           registry-url: 'https://registry.npmjs.org'
       - run: npm ci
       - run: npm publish

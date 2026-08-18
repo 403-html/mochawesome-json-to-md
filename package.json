@@ -7,6 +7,9 @@
   "bin": {
     "mochawesome-json-to-md": "./index.js"
   },
+  "engines": {
+    "node": ">=20"
+  },
   "files": [
     "index.js",
     "index.d.ts",
