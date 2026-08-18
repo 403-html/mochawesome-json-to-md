@@ -57,6 +57,21 @@ jobs:
             exit 1
           fi
 
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - run: npm ci
+      - run: npm run eslint
+      - run: npm run lint:md
+      - run: npm run typecheck
+
   test-and-summary:
     runs-on: ubuntu-latest
     steps:
