@@ -43,5 +43,27 @@
     "mocha": "^11.7.5",
     "mochawesome": "^7.1.4",
     "prettier": "^3.7.4"
+  },
+  "overrides": {
+    "eslint": {
+      "js-yaml": "^4.3.1",
+      "minimatch": {
+        "brace-expansion": "^1.1.16"
+      }
+    },
+    "mocha": {
+      "js-yaml": "^4.3.1",
+      "serialize-javascript": "^7.0.5",
+      "diff": "^8.0.4"
+    },
+    "markdownlint-cli": {
+      "js-yaml": "^4.3.1",
+      "minimatch": "^10.2.3",
+      "smol-toml": "^1.6.1",
+      "markdown-it": "^14.2.0"
+    },
+    "mochawesome": {
+      "uuid": "^11.1.1"
+    }
   }
 }
